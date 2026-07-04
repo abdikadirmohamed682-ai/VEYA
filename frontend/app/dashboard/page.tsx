@@ -7,22 +7,23 @@ import RecentOrders from "@/components/dashboard/RecentOrders";
 export default function DashboardPage() {
   return (
     <main className="flex min-h-screen bg-pink-50">
-
       <Sidebar />
 
       <div className="flex-1 p-8">
+        <TopBar />
 
-        <TopBar /><div className="mt-8">
-  <StatsCards />
-  <QuickActions />
-  <div className="mt-8">
-  <RecentOrders />
-</div>
-  
-</div>
+        <div className="mt-8">
+          <StatsCards />
+        </div>
 
+        <div className="mt-8">
+          <QuickActions />
+        </div>
+
+        <div className="mt-8">
+          <RecentOrders />
+        </div>
       </div>
-
     </main>
   );
 }
