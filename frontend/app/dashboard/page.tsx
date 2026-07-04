@@ -3,6 +3,7 @@ import TopBar from "@/components/dashboard/TopBar";
 import StatsCards from "@/components/dashboard/StatsCards";
 import QuickActions from "@/components/dashboard/QuickActions";
 import StoreSetup from "@/components/dashboard/StoreSetup";
+import RecentOrders from "@/components/dashboard/RecentOrders";
 export default function DashboardPage() {
   return (
     <main className="flex min-h-screen bg-pink-50">
@@ -14,6 +15,9 @@ export default function DashboardPage() {
         <TopBar /><div className="mt-8">
   <StatsCards />
   <QuickActions />
+  <div className="mt-8">
+  <RecentOrders />
+</div>
   
 </div>
 
