@@ -1,0 +1,62 @@
+"use client";
+
+import Link from "next/link";
+
+export default function WaitingPage() {
+  return (
+    <main className="min-h-screen bg-[#FAFAFC] flex items-center justify-center">
+
+      <div className="w-full max-w-2xl rounded-3xl bg-white p-10 text-center shadow">
+
+        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-pink-100">
+
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-pink-600 border-t-transparent"></div>
+
+        </div>
+
+        <h1 className="mt-8 text-4xl font-bold">
+          Waiting For Payment Confirmation
+        </h1>
+
+        <p className="mt-5 leading-8 text-gray-600">
+          Your payment information has been submitted.
+          <br />
+          The seller will review your payment.
+          <br />
+          Once approved your order status will update automatically.
+        </p>
+
+        <div className="mt-10 rounded-2xl border bg-gray-50 p-6">
+
+          <h2 className="text-xl font-bold">
+            Current Status
+          </h2>
+
+          <p className="mt-4 font-semibold text-orange-500">
+            Waiting...
+          </p>
+
+        </div>
+
+        <div className="mt-10 flex justify-center gap-4">
+
+          <Link
+            href="/"
+            className="rounded-2xl border px-6 py-3 font-semibold hover:bg-gray-100"
+          >
+            Home
+          </Link>
+
+          <button
+            className="rounded-2xl bg-red-500 px-6 py-3 font-semibold text-white hover:bg-red-600"
+          >
+            Report Problem
+          </button>
+
+        </div>
+
+      </div>
+
+    </main>
+  );
+}
