@@ -1,0 +1,4 @@
+-- Add download_url to orders for digital product delivery
+alter table public.orders
+  add column if not exists download_url text;
+

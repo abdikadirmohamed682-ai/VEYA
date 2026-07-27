@@ -1,9 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getStoreTypeDefinition, isStoreType } from "@/lib/store-types";
 
 interface Product {
   id: string;
@@ -25,8 +25,9 @@ export default function EditProductPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [category, setCategory] = useState("Digital");
+  const [category, setCategory] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export default function EditProductPage() {
 
       const { data: storeData, error: storeError } = await supabase
         .from("stores")
-        .select("id")
+        .select("id, store_type")
         .eq("user_id", userData.session.user.id)
         .single();
 
@@ -50,6 +51,9 @@ export default function EditProductPage() {
         router.replace("/products");
         return;
       }
+
+      const storeType = isStoreType(storeData.store_type) ? storeData.store_type : "digital";
+      setCategories(getStoreTypeDefinition(storeType).categories as string[]);
 
       const { data: productData, error } = await supabase
         .from("products")
@@ -177,7 +181,6 @@ export default function EditProductPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
       <header className="border-b bg-white sticky top-0 z-10">
         <div className="px-8 py-6">
           <h1 className="text-3xl font-bold">Edit Product</h1>
@@ -185,7 +188,6 @@ export default function EditProductPage() {
         </div>
       </header>
 
-      {/* Content */}
       <div className="p-8">
         <div className="max-w-2xl mx-auto">
           <form
@@ -240,10 +242,9 @@ export default function EditProductPage() {
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-pink-500"
                 >
-                  <option>Digital</option>
-                  <option>Fashion</option>
-                  <option>Restaurant</option>
-                  <option>Electronics</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
                 </select>
               </div>
 

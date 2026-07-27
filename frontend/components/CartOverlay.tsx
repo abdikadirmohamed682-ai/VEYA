@@ -60,6 +60,7 @@ export default function CartOverlay() {
 
       addItem({
         product_id: productId,
+        store_id: "",
         title,
         price,
         quantity: 1,

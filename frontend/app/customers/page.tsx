@@ -7,7 +7,7 @@ import ViewStoreButton from "@/components/ViewStoreButton";
 
 interface OrderRecord {
   customer_name: string;
-  phone_number: string;
+  phone: string;
   total: number;
   status: string;
   created_at: string;
@@ -15,7 +15,7 @@ interface OrderRecord {
 
 interface CustomerSummary {
   customer_name: string;
-  phone_number: string;
+  phone: string;
   order_count: number;
   total_spent: number;
   last_order_date: string;
@@ -49,7 +49,7 @@ export default function CustomersPage() {
 
         const { data, error } = await supabase
           .from("orders")
-          .select("customer_name, phone_number, total, status, created_at")
+          .select("customer_name, phone, total, status, created_at")
           .eq("store_id", store.id)
           .eq("status", "completed")
           .order("created_at", { ascending: true });
@@ -64,7 +64,7 @@ export default function CustomersPage() {
         const customerMap = new Map<string, CustomerSummary>();
 
         records.forEach((order) => {
-          const key = order.phone_number || order.customer_name;
+          const key = order.phone || order.customer_name;
           const existing = customerMap.get(key);
           const orderDate = new Date(order.created_at).toISOString();
 
@@ -78,7 +78,7 @@ export default function CustomersPage() {
           } else {
             customerMap.set(key, {
               customer_name: order.customer_name,
-              phone_number: order.phone_number,
+              phone: order.phone,
               order_count: 1,
               total_spent: Number(order.total || 0),
               last_order_date: orderDate,
@@ -168,15 +168,15 @@ export default function CustomersPage() {
                 </tr>
               ) : (
                 customers.map((customer) => (
-                  <tr key={customer.phone_number} className="border-b hover:bg-gray-50">
+                  <tr key={customer.phone} className="border-b hover:bg-gray-50">
                     <td className="p-5 font-semibold text-gray-900">{customer.customer_name}</td>
-                    <td className="p-5 text-gray-600">{customer.phone_number}</td>
+                    <td className="p-5 text-gray-600">{customer.phone}</td>
                     <td className="p-5 text-gray-900">{customer.order_count}</td>
                     <td className="p-5 font-semibold text-[#D94680]">${customer.total_spent.toFixed(2)}</td>
                     <td className="p-5 text-gray-600">{formatDate(customer.last_order_date)}</td>
                     <td className="p-5">
                       <Link
-                        href={`/customers/${encodeURIComponent(customer.phone_number)}`}
+                        href={`/customers/${encodeURIComponent(customer.phone)}`}
                         className="inline-flex rounded-3xl bg-[#D94680] px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600"
                       >
                         View details

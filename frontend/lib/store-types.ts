@@ -1,10 +1,6 @@
 export const STORE_TYPES = [
   "digital",
-  "fashion",
-  "restaurant",
-  "electronics",
-  "beauty",
-  "talent",
+  "physical",
 ] as const;
 
 export type StoreType = (typeof STORE_TYPES)[number];
@@ -27,40 +23,12 @@ export const STORE_TYPE_DEFINITIONS: Record<StoreType, StoreTypeDefinition> = {
     itemLabel: "products",
     storefrontTemplate: "digital",
   },
-  fashion: {
-    label: "Fashion Store",
-    categories: ["Clothes", "Shoes", "Accessories"],
-    dashboardItems: ["Clothes", "Shoes", "Accessories"],
+  physical: {
+    label: "Physical Store",
+    categories: ["Products"],
+    dashboardItems: ["Products"],
     itemLabel: "items",
-    storefrontTemplate: "fashion",
-  },
-  restaurant: {
-    label: "Restaurant",
-    categories: ["Meals", "Drinks"],
-    dashboardItems: ["Menu", "Meals", "Drinks"],
-    itemLabel: "menu items",
-    storefrontTemplate: "restaurant",
-  },
-  electronics: {
-    label: "Electronics Store",
-    categories: ["Devices", "Accessories"],
-    dashboardItems: ["Devices", "Accessories"],
-    itemLabel: "items",
-    storefrontTemplate: "electronics",
-  },
-  beauty: {
-    label: "Beauty Store",
-    categories: ["Cosmetics", "Skin Care"],
-    dashboardItems: ["Cosmetics", "Skin Care"],
-    itemLabel: "items",
-    storefrontTemplate: "beauty",
-  },
-  talent: {
-    label: "Talent Store",
-    categories: ["Services", "Portfolio", "Booking"],
-    dashboardItems: ["Services", "Portfolio", "Booking"],
-    itemLabel: "offerings",
-    storefrontTemplate: "talent",
+    storefrontTemplate: "physical",
   },
 };
 

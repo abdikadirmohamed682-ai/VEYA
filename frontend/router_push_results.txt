@@ -1,0 +1,7 @@
+﻿
+Filename LineNumber Path                                                                 
+-------- ---------- ----                                                                 
+page.tsx         71 C:\Users\Admin\Projects\VEYA\frontend\app\buy\[id]\page.tsx          
+page.tsx        137 C:\Users\Admin\Projects\VEYA\frontend\app\order-waiting\[id]\page.tsx
+
+

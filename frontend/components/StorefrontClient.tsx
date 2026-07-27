@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 interface StorefrontProduct {
   id: string;
@@ -38,9 +39,25 @@ export default function StorefrontClient({
   storeBanner,
   products,
 }: StorefrontClientProps) {
+  const [isCustomerLoggedIn, setIsCustomerLoggedIn] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortOption, setSortOption] = useState("featured");
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: customer } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("id", session.user.id)
+          .single();
+        setIsCustomerLoggedIn(!!customer);
+      }
+    }
+    checkAuth();
+  }, []);
 
   const categories = useMemo(
     () => [
@@ -98,7 +115,41 @@ export default function StorefrontClient({
   }, [products, searchTerm, selectedCategory, sortOption]);
 
   return (
-    <main className="min-h-screen bg-[#FAFAFC] text-gray-900">
+<main className="min-h-screen bg-[#FAFAFC] text-gray-900">
+      {/* Customer navigation header */}
+      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-8 lg:px-10">
+          <Link href="/" className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#D94680] text-xl font-bold text-white">
+            V
+          </Link>
+
+          <nav className="flex items-center gap-4">
+            {isCustomerLoggedIn ? (
+              <Link
+                href="/customer/orders"
+                className="rounded-2xl bg-[#D94680] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+              >
+                My Orders
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/customer/login"
+                  className="rounded-2xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/customer/signup"
+                  className="rounded-2xl bg-[#D94680] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </nav>
+        </div>
+      </header>
       <section className="overflow-hidden bg-white">
         <div className="relative">
           <div className="h-72 bg-gray-100 sm:h-96">

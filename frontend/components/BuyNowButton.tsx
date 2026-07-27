@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { addCartItem } from "@/lib/cart";
+import { supabase } from "@/lib/supabase";
 
 interface BuyNowButtonProps {
   product_id: string;
+  store_id: string;
   title: string;
   price: number;
   image: string;
@@ -14,21 +15,43 @@ interface BuyNowButtonProps {
 
 export default function BuyNowButton({
   product_id,
+  store_id,
   title,
   price,
   image,
   disabled = false,
 }: BuyNowButtonProps) {
   const router = useRouter();
+
   const [status, setStatus] = useState<"idle" | "processing">("idle");
 
-  const handleBuyNow = () => {
+
+  const handleBuyNow = async () => {
     if (disabled) return;
 
     setStatus("processing");
-    addCartItem({ product_id, title, price, image, quantity: 1 });
-    router.push("/checkout");
+
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      router.push(`/customer/login?redirect=/buy/${product_id}`);
+      return;
+    }
+
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("id", session.user.id)
+      .single();
+
+    if (!customer) {
+      router.push(`/customer/login?redirect=/buy/${product_id}`);
+      return;
+    }
+
+    router.push(`/buy/${product_id}`);
   };
+
 
   return (
     <button
@@ -41,7 +64,11 @@ export default function BuyNowButton({
           : "bg-white hover:bg-[#FCE7F3]"
       }`}
     >
-      {disabled ? "Out of Stock" : status === "processing" ? "Processing..." : "Buy Now"}
+      {disabled
+        ? "Out of Stock"
+        : status === "processing"
+        ? "Processing..."
+        : "Buy Now"}
     </button>
   );
 }

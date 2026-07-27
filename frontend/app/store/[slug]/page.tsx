@@ -23,38 +23,30 @@ interface Product {
   views?: number | null;
 }
 
-interface StorePageProps {
-  params: {
-    slug: string;
-  };
-}
+export default async function StorePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
 
-export default async function StorePage({ params }: StorePageProps) {
-  const slug = params.slug;
-
-  const storeResponse = await supabase
+  const { data: storeData, error: storeError } = await supabase
     .from("stores")
     .select("id, store_name, description, logo, banner, slug")
     .eq("slug", slug)
     .single();
 
-  const storeData = storeResponse.data as Store | null;
-  const storeError = storeResponse.error;
-
   if (storeError || !storeData) {
-    return notFound();
+    notFound();
   }
 
-  const productsResponse = await supabase
+  const { data: products } = await supabase
     .from("products")
     .select(
       "id, product_name, description, price, category, main_image_url, status, is_featured, views"
     )
     .eq("store_id", storeData.id)
-    .eq("status", "active")
-    .order("created_at", { ascending: false });
-
-  const products = (productsResponse.data as Product[]) || [];
+    .eq("status", "active");
 
   return (
     <StorefrontClient
@@ -63,7 +55,7 @@ export default async function StorePage({ params }: StorePageProps) {
       storeLogo={storeData.logo}
       storeBanner={storeData.banner}
       storeSlug={storeData.slug}
-      products={products}
+      products={products ?? []}
     />
   );
 }

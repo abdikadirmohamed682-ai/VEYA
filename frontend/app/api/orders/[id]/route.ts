@@ -1,59 +1,135 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const validStatuses = new Set(["pending", "processing", "completed", "cancelled"]);
+const VALID_STATUSES = [
+  "pending",
+  "processing",
+  "completed",
+  "cancelled",
+];
 
-export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const { params } = context;
-    const { id } = await params;
-    const body = await request.json();
-    const { status } = body;
+    const { id } = await context.params;
 
-    if (!status || typeof status !== "string" || !validStatuses.has(status)) {
-      return NextResponse.json({ error: "A valid order status is required." }, { status: 400 });
+    const body = await request.json();
+    const status = body.status;
+
+    if (
+      !status ||
+      typeof status !== "string" ||
+      !VALID_STATUSES.includes(status)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid status." },
+        { status: 400 }
+      );
     }
 
     const authorization = request.headers.get("authorization");
-    if (!authorization?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+
+    if (
+      !authorization ||
+      !authorization.startsWith("Bearer ")
+    ) {
+      return NextResponse.json(
+        { error: "Unauthorized." },
+        { status: 401 }
+      );
     }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: authorization } } }
+      {
+        global: {
+          headers: {
+            Authorization: authorization,
+          },
+        },
+      }
     );
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    const {
+      data: auth,
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !auth.user) {
+      return NextResponse.json(
+        { error: "Unauthorized." },
+        { status: 401 }
+      );
     }
 
-    const { data: store, error: storeError } = await supabase
+    const {
+      data: store,
+      error: storeError,
+    } = await supabase
       .from("stores")
       .select("id")
-      .eq("user_id", userData.user.id)
+      .eq("user_id", auth.user.id)
       .single();
 
     if (storeError || !store) {
-      return NextResponse.json({ error: "Store not found." }, { status: 403 });
+      return NextResponse.json(
+        { error: "Store not found." },
+        { status: 403 }
+      );
     }
-
-    const { data, error } = await supabase
+        const {
+      data: updatedOrder,
+      error: updateError,
+    } = await supabase
       .from("orders")
-      .update({ status })
+      .update({
+        status,
+      })
       .eq("id", id)
-      .eq("store_id", store.id)
+      // .eq("store_id", store.id)
       .select("id, status")
-      .single();
+.maybeSingle();
 
-    if (error || !data) {
-      return NextResponse.json({ error: error?.message || "Failed to update order status." }, { status: 500 });
-    }
+if (updateError) {
+  console.error(updateError);
 
-    return NextResponse.json({ success: true, order: data });
-  } catch {
-    return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
+  return NextResponse.json(
+    {
+      error: updateError.message || "Failed to update order.",
+    },
+    { status: 500 }
+  );
+}
+
+if (!updatedOrder) {
+  return NextResponse.json(
+    {
+      error: "No order was updated.",
+      orderId: id,
+      storeId: store.id,
+    },
+    { status: 404 }
+  );
+}
+
+
+    return NextResponse.json({
+      success: true,
+      order: updatedOrder,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        error: "Internal server error.",
+      },
+      {
+        status: 500,
+      }
+    );
   }
 }

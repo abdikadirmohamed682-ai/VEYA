@@ -8,18 +8,18 @@ import { supabase } from "@/lib/supabase";
 interface OrderItem {
   id: string | number;
   order_id: string | number;
-  title: string;
+  product_name: string;
+  main_image_url: string | null;
   price: number;
   quantity: number;
-  image: string;
 }
 
 interface OrderDetails {
   id: string | number;
   customer_name: string;
-  phone_number: string;
-  whatsapp_number: string;
-  delivery_address: string;
+  phone: string;
+  whatsapp: string;
+  address: string;
   notes: string | null;
   subtotal: number;
   delivery_fee: number;
@@ -31,7 +31,7 @@ interface OrderDetails {
 interface CustomerOrderSummary {
   id: string | number;
   customer_name: string;
-  phone_number: string;
+  phone: string;
   total: number;
   status: string;
   created_at: string;
@@ -69,8 +69,8 @@ export default function CustomerDetailPage() {
 
         const { data: orders, error } = await supabase
           .from("orders")
-          .select("id, customer_name, phone_number, total, status, created_at")
-          .eq("phone_number", phone)
+          .select("id, customer_name, phone, total, status, created_at")
+          .eq("phone", phone)
           .eq("store_id", store.id)
           .order("created_at", { ascending: false });
 
@@ -92,9 +92,9 @@ export default function CustomerDetailPage() {
         setCustomerOrders(customerOrdersData);
 
         const orderIds = customerOrdersData.map((order) => order.id);
-        const { data: items, error: itemsError } = await supabase
+        const { data: rawItems, error: itemsError } = await supabase
           .from("order_items")
-          .select("id, order_id, title, price, quantity, image")
+          .select("id, order_id, product_id, quantity, price")
           .in("order_id", orderIds);
 
         if (itemsError) {
@@ -103,7 +103,35 @@ export default function CustomerDetailPage() {
           return;
         }
 
-        setOrderItems((items || []) as OrderItem[]);
+        // Fetch product details for order items
+        const rawOrderItems = (rawItems || []) as { id: string | number; order_id: string | number; product_id: string; quantity: number; price: number }[];
+        if (rawOrderItems.length > 0) {
+          const productIds = [...new Set(rawOrderItems.map((i) => i.product_id))];
+          const { data: productsData } = await supabase
+            .from("products")
+            .select("id, product_name, main_image_url")
+            .in("id", productIds);
+
+          const productMap = new Map<string, { product_name: string; main_image_url: string | null }>();
+          (productsData || []).forEach((p: { id: string; product_name: string; main_image_url: string | null }) => {
+            productMap.set(p.id, { product_name: p.product_name, main_image_url: p.main_image_url });
+          });
+
+          const items: OrderItem[] = rawOrderItems.map((item) => {
+            const product = productMap.get(item.product_id);
+            return {
+              id: item.id,
+              order_id: item.order_id,
+              product_name: product?.product_name || "Unknown Product",
+              main_image_url: product?.main_image_url || null,
+              price: item.price,
+              quantity: item.quantity,
+            };
+          });
+          setOrderItems(items);
+        } else {
+          setOrderItems([]);
+        }
       } catch (fetchError) {
         setError(fetchError instanceof Error ? fetchError.message : String(fetchError));
       } finally {
@@ -212,9 +240,9 @@ export default function CustomerDetailPage() {
                 <div className="mt-6 space-y-4">
                   {orderItems.map((item) => (
                     <div key={String(item.id)} className="grid gap-4 rounded-[1.5rem] border border-gray-200 bg-[#FEF3F8] p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                      <img src={item.image} alt={item.title} className="h-24 w-24 rounded-3xl object-cover" />
+                      <img src={item.main_image_url || ""} alt={item.product_name} className="h-24 w-24 rounded-3xl object-cover" />
                       <div>
-                        <p className="text-lg font-semibold text-gray-900">{item.title}</p>
+                        <p className="text-lg font-semibold text-gray-900">{item.product_name}</p>
                         <p className="mt-2 text-sm text-gray-600">Qty: {item.quantity}</p>
                       </div>
                       <div className="text-right">

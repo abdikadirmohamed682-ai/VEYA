@@ -1,20 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { CartItem, addCartItem } from "@/lib/cart";
+import { addCartItem } from "@/lib/cart";
 
 interface AddToCartButtonProps {
   product_id: string;
+  store_id: string;
   title: string;
   price: number;
   image: string;
 }
 
-export default function AddToCartButton({ product_id, title, price, image }: AddToCartButtonProps) {
+export default function AddToCartButton({
+  product_id,
+  store_id,
+  title,
+  price,
+  image,
+}: AddToCartButtonProps) {
   const [status, setStatus] = useState<"idle" | "added">("idle");
 
   const handleAdd = () => {
-    addCartItem({ product_id, title, price, image, quantity: 1 });
+    addCartItem({
+      product_id,
+      store_id,
+      title,
+      price,
+      image,
+      quantity: 1,
+    });
+
     setStatus("added");
     window.setTimeout(() => setStatus("idle"), 1800);
   };

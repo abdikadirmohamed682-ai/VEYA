@@ -16,12 +16,13 @@ interface Product {
 
 interface Store {
   store_name: string;
+  store_type: string | null;
 }
 
 interface OrderRecord {
   id: string;
   customer_name: string;
-  phone_number: string;
+  phone: string;
   total: number;
   status: string;
   created_at: string;
@@ -44,6 +45,7 @@ export default function DashboardPage() {
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [productCount, setProductCount] = useState(0);
   const [totalViews, setTotalViews] = useState(0);
+  const [storeType, setStoreType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -87,16 +89,17 @@ export default function DashboardPage() {
 
         const userId = data.user.id;
 
-        // Fetch store
+// Fetch store
         const { data: storeData, error: storeError } = await supabase
           .from("stores")
-          .select("id, store_name")
+          .select("id, store_name, store_type")
           .eq("user_id", userId)
-          .single();
+          .maybeSingle();
 
         if (!storeError && storeData) {
           setStore(storeData as Store);
-        } else {
+          setStoreType(storeData.store_type || null);
+        } else if (storeError) {
           setErrorMessage(storeError?.message || "Store not found.");
         }
 
@@ -114,7 +117,7 @@ export default function DashboardPage() {
             .order("created_at", { ascending: false }),
           supabase
             .from("orders")
-            .select("id, customer_name, phone_number, total, status, created_at")
+            .select("id, customer_name, phone, total, status, created_at")
             .eq("store_id", storeId)
             .order("created_at", { ascending: false }),
         ]);
@@ -156,7 +159,7 @@ export default function DashboardPage() {
 
           const customers = new Set<string>();
           orderRecords.forEach((order) => {
-            const key = order.phone_number?.trim() || order.customer_name?.trim() || order.id;
+            const key = order.phone?.trim() || order.customer_name?.trim() || order.id;
             customers.add(key);
           });
           setTotalCustomers(customers.size);
@@ -215,7 +218,7 @@ export default function DashboardPage() {
           </p>
         ) : null}
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 ${storeType === "digital" ? "xl:grid-cols-4" : "xl:grid-cols-5"}`}>
           <div className="bg-white rounded-2xl p-6 shadow">
             <div className="flex items-center justify-between">
               <div>
@@ -264,17 +267,19 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 font-medium">Product Views</p>
-                <p className="text-3xl font-bold mt-2">{totalViews.toLocaleString()}</p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100">
-                <span className="text-xl">👁️</span>
+          {storeType !== "digital" && (
+            <div className="bg-white rounded-2xl p-6 shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500 font-medium">Product Views</p>
+                  <p className="text-3xl font-bold mt-2">{totalViews.toLocaleString()}</p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100">
+                  <span className="text-xl">👁️</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.4fr_0.85fr] mb-8">
@@ -325,48 +330,50 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white p-6 shadow">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-[#D94680]">Top Products</p>
-                <h2 className="mt-3 text-2xl font-bold text-gray-900">Most viewed</h2>
-                <p className="mt-2 text-gray-500">Top 5 products by page views.</p>
+          {storeType !== "digital" && (
+            <div className="rounded-3xl bg-white p-6 shadow">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.3em] text-[#D94680]">Top Products</p>
+                  <h2 className="mt-3 text-2xl font-bold text-gray-900">Most viewed</h2>
+                  <p className="mt-2 text-gray-500">Top 5 products by page views.</p>
+                </div>
+                <span className="rounded-3xl bg-[#EFF6FF] px-4 py-3 text-sm font-semibold text-[#1D4ED8]">
+                  {topProducts.length}
+                </span>
               </div>
-              <span className="rounded-3xl bg-[#EFF6FF] px-4 py-3 text-sm font-semibold text-[#1D4ED8]">
-                {topProducts.length}
-              </span>
-            </div>
 
-            <div className="mt-8 space-y-4">
-              {topProducts.length > 0 ? (
-                topProducts.map((product, index) => (
-                  <div key={product.id} className="rounded-3xl border border-gray-200 p-4 shadow-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-gray-100 overflow-hidden">
-                        {product.main_image_url ? (
-                          <img src={product.main_image_url} alt={product.product_name} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="text-gray-400">No image</span>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{product.product_name}</p>
-                        <p className="mt-1 text-sm text-gray-500">{product.views || 0} views</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">Rank #{index + 1}</p>
-                        <p className="text-sm text-[#D94680]">${product.price.toFixed(2)}</p>
+              <div className="mt-8 space-y-4">
+                {topProducts.length > 0 ? (
+                  topProducts.map((product, index) => (
+                    <div key={product.id} className="rounded-3xl border border-gray-200 p-4 shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-gray-100 overflow-hidden">
+                          {product.main_image_url ? (
+                            <img src={product.main_image_url} alt={product.product_name} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-gray-400">No image</span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{product.product_name}</p>
+                          <p className="mt-1 text-sm text-gray-500">{product.views || 0} views</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">Rank #{index + 1}</p>
+                          <p className="text-sm text-[#D94680]">${product.price.toFixed(2)}</p>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
+                    No top products available yet.
                   </div>
-                ))
-              ) : (
-                <div className="rounded-3xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
-                  No top products available yet.
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Featured Products Section */}
@@ -404,9 +411,11 @@ export default function DashboardPage() {
                     <p className="text-[#D94680] font-bold mt-2">
                       ${product.price.toFixed(2)}
                     </p>
-                    <p className="text-gray-500 text-sm mt-1">
-                      👁️ {product.views || 0} views
-                    </p>
+                    {storeType !== "digital" && (
+                      <p className="text-gray-500 text-sm mt-1">
+                        👁️ {product.views || 0} views
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -456,9 +465,11 @@ export default function DashboardPage() {
                     <p className="text-[#D94680] font-bold mt-2">
                       ${product.price.toFixed(2)}
                     </p>
-                    <p className="text-gray-500 text-sm mt-1">
-                      👁️ {product.views || 0} views
-                    </p>
+                    {storeType !== "digital" && (
+                      <p className="text-gray-500 text-sm mt-1">
+                        👁️ {product.views || 0} views
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

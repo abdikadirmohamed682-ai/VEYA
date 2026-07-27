@@ -1,5 +1,6 @@
 export interface CartItem {
   product_id: string;
+  store_id: string;
   title: string;
   price: number;
   quantity: number;
@@ -26,6 +27,7 @@ export function loadCart(): CartItem[] {
 
     return parsed.map((item) => ({
       product_id: String(item.product_id || ""),
+      store_id: String(item.store_id || ""),
       title: String(item.title || ""),
       price: Number(item.price || 0),
       quantity: Number(item.quantity || 0),

@@ -1,0 +1,6 @@
+﻿
+FullName                                                         
+--------                                                         
+C:\Users\Admin\Projects\VEYA\frontend\app\customer\login\page.tsx
+
+

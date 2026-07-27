@@ -91,6 +91,7 @@ export default function RegisterPage() {
     // Step 4: Create user profile in database
     const { error: profileError } = await supabase.from("users").insert([
       {
+        id: userId,
         full_name: fullName,
         email: email,
         phone: phone,

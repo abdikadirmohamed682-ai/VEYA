@@ -94,7 +94,7 @@ export default function CreateStorePage() {
           className="mt-10 space-y-6"
         >
 
-                  <div>
+          <div>
 
             <label className="mb-2 block font-semibold">
               Store Name
@@ -122,7 +122,7 @@ export default function CreateStorePage() {
                 <option key={type} value={type}>{STORE_TYPE_DEFINITIONS[type].label}</option>
               ))}
             </select>
-            <p className="mt-2 text-sm text-gray-500">This determines your dashboard tools and product categories.</p>
+            <p className="mt-2 text-sm text-gray-500">Choose Digital Store for downloads and licenses, or Physical Store for tangible products.</p>
           </div>
 
           <div>
