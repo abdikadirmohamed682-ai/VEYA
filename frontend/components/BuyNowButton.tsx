@@ -23,7 +23,7 @@ export default function BuyNowButton({
 }: BuyNowButtonProps) {
   const router = useRouter();
 
-  const [status, setStatus] = useState<"idle" | "processing">("idle");
+  const [status, setStatus] = useState<"idle" | "processing" | "self-purchase">("idle");
 
 
   const handleBuyNow = async () => {
@@ -35,6 +35,18 @@ export default function BuyNowButton({
 
     if (!session) {
       router.push(`/customer/login?redirect=/buy/${product_id}`);
+      return;
+    }
+
+    // Check if the user is the store owner
+    const { data: store } = await supabase
+      .from("stores")
+      .select("user_id")
+      .eq("id", store_id)
+      .single();
+
+    if (store && store.user_id === session.user.id) {
+      setStatus("self-purchase");
       return;
     }
 
@@ -66,6 +78,8 @@ export default function BuyNowButton({
     >
       {disabled
         ? "Out of Stock"
+        : status === "self-purchase"
+        ? "You cannot purchase your own product."
         : status === "processing"
         ? "Processing..."
         : "Buy Now"}

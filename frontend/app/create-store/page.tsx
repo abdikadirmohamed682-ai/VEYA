@@ -11,6 +11,8 @@ export default function CreateStorePage() {
   const [storeName, setStoreName] = useState("");
   const [description, setDescription] = useState("");
   const [storeType, setStoreType] = useState<StoreType | "">("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   function createSlug(name: string) {
@@ -41,8 +43,29 @@ export default function CreateStorePage() {
       return;
     }
 
-    const userId = authData.session.user.id;
+const userId = authData.session.user.id;
     const slug = createSlug(storeName) || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    let logoUrl = "";
+
+    if (logoFile) {
+      const fileName = `${userId}_${Date.now()}`;
+      const { error: uploadError } = await supabase.storage
+        .from("store-logos")
+        .upload(fileName, logoFile);
+
+      if (uploadError) {
+        setLoading(false);
+        alert(uploadError.message);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("store-logos")
+        .getPublicUrl(fileName);
+
+      logoUrl = publicUrlData.publicUrl;
+    }
 
     const { data: storeData, error } = await supabase
       .from("stores")
@@ -51,7 +74,7 @@ export default function CreateStorePage() {
           store_name: storeName,
           slug: slug,
           description: description,
-          logo: "",
+          logo: logoUrl,
           banner: "",
           verified: false,
           user_id: userId,
@@ -74,6 +97,16 @@ export default function CreateStorePage() {
     }
 
     router.push("/dashboard");
+  }
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = () => setLogoPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   }
 
   return (
@@ -139,6 +172,25 @@ export default function CreateStorePage() {
               className="w-full rounded-2xl border border-gray-300 p-4 outline-none focus:border-pink-500"
             />
 
+          </div>
+
+          <div>
+            <label className="mb-2 block font-semibold">Store Logo</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleLogoChange}
+              className="w-full rounded-2xl border border-gray-300 p-4 outline-none focus:border-pink-500 file:mr-4 file:rounded-xl file:border-0 file:bg-pink-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-pink-600 hover:file:bg-pink-100"
+            />
+            {logoPreview && (
+              <div className="mt-4">
+                <img
+                  src={logoPreview}
+                  alt="Logo preview"
+                  className="h-32 w-32 rounded-2xl border border-gray-200 object-cover"
+                />
+              </div>
+            )}
           </div>
 
           <button

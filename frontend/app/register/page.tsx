@@ -1,12 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function RegisterPage() {
-  const router = useRouter();
-
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -17,6 +14,8 @@ export default function RegisterPage() {
 
   const [passportImage, setPassportImage] = useState<File | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null);
+
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -43,6 +42,9 @@ export default function RegisterPage() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: window.location.origin + "/auth/callback",
+      },
     });
 
     if (signUpError) {
@@ -57,38 +59,7 @@ export default function RegisterPage() {
 
     const userId = signUpData.user.id;
 
-    // Step 2: Ensure session is established
-    let session = signUpData.session;
-
-    if (!session) {
-      // If no session after signup, sign in immediately
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        alert(`SignIn Error: ${signInError.message}`);
-        return;
-      }
-
-      session = signInData.session;
-    }
-
-    if (!session) {
-      alert("Failed to establish authenticated session. Please try again.");
-      return;
-    }
-
-    // Step 3: Verify session is valid
-    const { data: sessionCheck, error: sessionError } = await supabase.auth.getSession();
-
-    if (sessionError || !sessionCheck?.session) {
-      alert(`Session Verification Error: ${sessionError?.message || "No active session"}`);
-      return;
-    }
-
-    // Step 4: Create user profile in database
+    // Step 2: Create user profile in database
     const { error: profileError } = await supabase.from("users").insert([
       {
         id: userId,
@@ -108,8 +79,10 @@ export default function RegisterPage() {
       return;
     }
 
-    // Step 5: Redirect to Create Store
-    router.push("/create-store");
+    // Step 3: Account created. Do NOT sign the user in and do NOT redirect.
+    setSuccessMessage(
+      "Your account has been created.\nPlease check your email and verify your account before logging in."
+    );
   }
 
   return (
@@ -132,6 +105,12 @@ export default function RegisterPage() {
           </p>
 
         </div>
+
+        {successMessage && (
+          <div className="mb-6 rounded-xl border border-green-300 bg-green-50 p-4 text-center text-green-800 whitespace-pre-line">
+            {successMessage}
+          </div>
+        )}
 
         <form
           onSubmit={handleRegister}

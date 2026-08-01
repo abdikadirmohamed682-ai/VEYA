@@ -25,6 +25,7 @@ export default function BuyPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [storeType, setStoreType] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -48,11 +49,6 @@ export default function BuyPage() {
         .eq("id", session.user.id)
         .single();
 
-      if (!customer) {
-        router.push(`/customer/login?redirect=/buy/${productId}`);
-        return;
-      }
-
       const { data, error } = await supabase
         .from("products")
         .select(`
@@ -74,14 +70,26 @@ export default function BuyPage() {
 
       setProduct(data as Product);
 
-      // Fetch store type
+      // Fetch store type and check ownership
       const { data: store } = await supabase
         .from("stores")
-        .select("store_type")
+        .select("user_id, store_type")
         .eq("id", data.store_id)
         .single();
 
       setStoreType(store?.store_type ?? null);
+
+if (store && store.user_id === session.user.id) {
+        setIsOwner(true);
+        setLoading(false);
+        return;
+      }
+
+      if (!customer) {
+        router.push(`/customer/login?redirect=/buy/${productId}`);
+        return;
+      }
+
       setLoading(false);
     }
 
@@ -102,6 +110,16 @@ export default function BuyPage() {
     return (
       <main className="min-h-screen flex items-center justify-center">
         Product not found.
+      </main>
+    );
+  }
+
+  if (isOwner) {
+    return (
+      <main className="min-h-screen bg-[#FAFAFC] py-10 px-6">
+        <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-lg text-center">
+          <p className="text-xl text-gray-600">You cannot purchase your own product.</p>
+        </div>
       </main>
     );
   }
@@ -224,3 +242,4 @@ export default function BuyPage() {
     </main>
   );
 }
+

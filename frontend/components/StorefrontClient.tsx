@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 interface StorefrontProduct {
@@ -39,7 +40,9 @@ export default function StorefrontClient({
   storeBanner,
   products,
 }: StorefrontClientProps) {
+  const pathname = usePathname();
   const [isCustomerLoggedIn, setIsCustomerLoggedIn] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortOption, setSortOption] = useState("featured");
@@ -54,10 +57,19 @@ export default function StorefrontClient({
           .eq("id", session.user.id)
           .single();
         setIsCustomerLoggedIn(!!customer);
+
+        // Check if the user owns this store
+        const { data: store } = await supabase
+          .from("stores")
+          .select("id")
+          .eq("slug", pathname.split("/").filter(Boolean).pop())
+          .eq("user_id", session.user.id)
+          .single();
+        setIsOwner(!!store);
       }
     }
     checkAuth();
-  }, []);
+  }, [pathname]);
 
   const categories = useMemo(
     () => [
@@ -124,28 +136,30 @@ export default function StorefrontClient({
           </Link>
 
           <nav className="flex items-center gap-4">
-            {isCustomerLoggedIn ? (
-              <Link
-                href="/customer/orders"
-                className="rounded-2xl bg-[#D94680] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-              >
-                My Orders
-              </Link>
-            ) : (
-              <>
+            {!isOwner && (
+              isCustomerLoggedIn ? (
                 <Link
-                  href="/customer/login"
-                  className="rounded-2xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/customer/signup"
+                  href="/customer/orders"
                   className="rounded-2xl bg-[#D94680] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
                 >
-                  Sign Up
+                  My Orders
                 </Link>
-              </>
+              ) : (
+                <>
+                  <Link
+                    href={`/customer/login?redirect=${encodeURIComponent(pathname)}`}
+                    className="rounded-2xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href={`/customer/signup?redirect=${encodeURIComponent(pathname)}`}
+                    className="rounded-2xl bg-[#D94680] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )
             )}
           </nav>
         </div>
