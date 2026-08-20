@@ -11,6 +11,10 @@ interface Seller {
   payment_number: string;
 }
 
+interface CartProduct {
+  store_id: string;
+}
+
 export default function PaymentPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -18,7 +22,7 @@ export default function PaymentPage() {
 
   const productId = params.id as string;
 
-  const storeId = searchParams.get("store_id") || "";
+  const requestedStoreId = searchParams.get("store_id") || "";
 
   const customer_name = searchParams.get("customer_name") || "";
   const phone = searchParams.get("phone") || "";
@@ -27,26 +31,77 @@ export default function PaymentPage() {
   const notes = searchParams.get("notes") || "";
 
   const [seller, setSeller] = useState<Seller | null>(null);
+  const [storeId, setStoreId] = useState("");
 
   const [senderNumber, setSenderNumber] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-useEffect(() => {
-  async function loadSeller() {
-    console.log("storeId:", storeId);
+  useEffect(() => {
+    let active = true;
+
+    async function loadSeller() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        if (active) {
+          setLoading(false);
+          router.replace(`/customer/login?redirect=/payment/${productId}`);
+        }
+        return;
+      }
+
+      const { data: customer } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("id", session.user.id)
+        .single();
+
+      if (!customer) {
+        if (active) {
+          setLoading(false);
+          router.replace(`/customer/login?redirect=/payment/${productId}`);
+        }
+        return;
+      }
+
+    let verifiedStoreId = "";
+
+    if (productId === "cart") {
+      // Cart removed in MVP — redirect back to home
+      if (active) setLoading(false);
+      return;
+    } else {
+      const { data: product, error: productError } = await supabase
+        .from("products")
+        .select("store_id")
+        .eq("id", productId)
+        .eq("status", "active")
+        .single();
+
+      if (productError || !product?.store_id) {
+        if (active) setLoading(false);
+        return;
+      }
+
+      verifiedStoreId = product.store_id;
+    }
+
+    if (requestedStoreId && requestedStoreId !== verifiedStoreId) {
+      if (active) setLoading(false);
+      return;
+    }
 
     const { data: store, error: storeError } = await supabase
       .from("stores")
       .select("user_id")
-      .eq("id", storeId)
+      .eq("id", verifiedStoreId)
       .single();
 
-    console.log("store:", store);
-    console.log("storeError:", storeError);
-
     if (storeError || !store) {
-      setLoading(false);
+      if (active) setLoading(false);
       return;
     }
 
@@ -56,20 +111,20 @@ useEffect(() => {
       .eq("id", store.user_id)
       .single();
 
-    console.log("user:", user);
-    console.log("userError:", userError);
+    if (!userError && user && active) {
+      setStoreId(verifiedStoreId);
+      setSeller(user as Seller);
+    }
 
-    setSeller(user as Seller);
-    setLoading(false);
+    if (active) setLoading(false);
   }
 
-  if (storeId) {
-    loadSeller();
-  } else {
-    console.log("storeId is empty");
-    setLoading(false);
-  }
-}, [storeId]);
+  const loadTimer = window.setTimeout(() => void loadSeller(), 0);
+  return () => {
+    active = false;
+    window.clearTimeout(loadTimer);
+  };
+}, [productId, requestedStoreId]);
   async function handlePaid() {
   if (!senderNumber) {
     alert("Please enter the payment number you used.");
@@ -81,14 +136,20 @@ useEffect(() => {
 
     // Retrieve the authenticated customer ID
     const { data: { session } } = await supabase.auth.getSession();
-    const customer_id = session?.user?.id || null;
+
+    if (!session) {
+      router.push(`/customer/login?redirect=/payment/${productId}`);
+      return;
+    }
 
     const response = await fetch("/api/buy", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
+        cart_checkout: productId === "cart",
         product_id: productId,
         store_id: storeId,
         customer_name,
@@ -97,7 +158,6 @@ useEffect(() => {
         address,
         notes,
         sender_payment_number: senderNumber,
-        customer_id,
       }),
     });
 
@@ -106,14 +166,16 @@ useEffect(() => {
     console.log(result);
 
     if (!response.ok) {
-      throw new Error(result.error || "Unknown error");
+      throw new Error(JSON.stringify(result.error || result));
     }
 
     router.push(`/order-waiting/${result.orderId}`);
 
   } catch (err) {
     console.error(err);
-    alert("Failed to create order.");
+    // Show full error details in development so the DB error is visible
+    const message = err instanceof Error ? err.message : String(err);
+    alert("Failed to create order: " + message);
   } finally {
     setSending(false);
   }
@@ -139,9 +201,34 @@ useEffect(() => {
     <main className="min-h-screen bg-[#FAFAFC] flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-lg">
 
-        <h1 className="text-3xl font-bold text-center mb-8">
-          Payment Information
-        </h1>
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-center mb-8">
+            Payment Information
+          </h1>
+
+          <div className="flex items-center gap-3">
+            <button aria-label="Home"
+              type="button"
+              onClick={() => router.push("/")}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+            </button>
+            <button aria-label="Back"
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined" && window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push("/");
+                }
+              }}
+              className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              <span aria-hidden="true">←</span>
+            </button>
+          </div>
+        </div>
 
         <div className="flex flex-col items-center">
 

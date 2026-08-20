@@ -89,9 +89,9 @@ export async function PATCH(
         status,
       })
       .eq("id", id)
-      // .eq("store_id", store.id)
+      .eq("store_id", store.id)
       .select("id, status")
-.maybeSingle();
+      .maybeSingle();
 
 if (updateError) {
   console.error(updateError);

@@ -1,8 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function WaitingPage() {
+  const router = useRouter();
+
   return (
     <main className="min-h-screen bg-[#FAFAFC] flex items-center justify-center">
 
@@ -40,17 +42,26 @@ export default function WaitingPage() {
 
         <div className="mt-10 flex justify-center gap-4">
 
-          <Link
-            href="/"
-            className="rounded-2xl border px-6 py-3 font-semibold hover:bg-gray-100"
+          <button aria-label="Back"
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/");
+              }
+            }}
+            className="rounded-2xl border border-gray-200 bg-white px-6 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
           >
-            Home
-          </Link>
+            <span aria-hidden="true">←</span>
+          </button>
 
-          <button
-            className="rounded-2xl bg-red-500 px-6 py-3 font-semibold text-white hover:bg-red-600"
+          <button aria-label="Home"
+            type="button"
+            onClick={() => router.push("/")}
+            className="rounded-2xl bg-[#D94680] px-6 py-3 font-semibold text-white transition hover:bg-[#C72F6E]"
           >
-            Report Problem
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
           </button>
 
         </div>

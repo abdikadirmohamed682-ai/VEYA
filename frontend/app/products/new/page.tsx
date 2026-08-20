@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -227,7 +227,6 @@ export default function AddProductPage() {
         category,
         main_image_url: mainImageUrl,
         status: "active",
-        views: 0,
         is_featured: false,
       };
 
@@ -261,12 +260,39 @@ export default function AddProductPage() {
   return (
     <main className="min-h-screen bg-[#FAFAFC]">
       <div className="mx-auto max-w-4xl px-8 py-12">
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold">Add Product</h1>
-          <p className="mt-2 text-gray-500">Publish a new product to your store.</p>
+        <div className="mb-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold">Add Product</h1>
+            <p className="mt-2 text-gray-500">Publish a new product to your store.</p>
+          </div>
 
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined" && window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push("/dashboard");
+                }
+              }}
+              className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
+            >
+              <span aria-hidden="true">�</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-6">
           {storeType && (
-            <div className="mt-4 rounded-2xl border border-pink-200 bg-pink-50 p-4">
+            <div className="rounded-2xl border border-pink-200 bg-pink-50 p-4">
               <p className="text-sm text-gray-500">Store Type</p>
               <h2 className="text-xl font-bold text-[#D94680]">
                 {getStoreTypeDefinition(storeType).label}
@@ -275,13 +301,13 @@ export default function AddProductPage() {
           )}
 
           {errorMessage && (
-            <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
               {errorMessage}
             </div>
           )}
         </div>
 
-        <form onSubmit={handlePublishProduct} className="space-y-8 rounded-3xl bg-white p-10 shadow">
+        <form onSubmit={handlePublishProduct} className="mt-8 space-y-8 rounded-3xl bg-white p-10 shadow">
           <div>
             <label className="mb-2 block font-semibold">Product title</label>
             <input

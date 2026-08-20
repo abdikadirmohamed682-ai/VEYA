@@ -1,8 +1,39 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 
 export async function POST(request: Request) {
+  const authorization = request.headers.get("authorization");
+
+  if (!authorization?.startsWith("Bearer ")) {
+    return NextResponse.json({ error: "Customer authentication is required" }, { status: 401 });
+  }
+
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: authorization } } }
+    );
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "Customer authentication is required" }, { status: 401 });
+    }
+
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("id", user.id)
+      .single();
+
+    if (!customer) {
+      return NextResponse.json({ error: "Customer account required" }, { status: 403 });
+    }
+
     const body = await request.json();
 
     const {
@@ -99,7 +130,7 @@ export async function POST(request: Request) {
       orderId: order.id,
     });
 
-  } catch (error) {
+  } catch (e) {
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }

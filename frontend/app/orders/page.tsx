@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ViewStoreButton from "@/components/ViewStoreButton";
 
@@ -21,7 +21,6 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [storeId, setStoreId] = useState("");
   const [storeType, setStoreType] = useState<"digital" | "physical">(
     "digital"
   );
@@ -55,13 +54,11 @@ export default function OrdersPage() {
         return;
       }
 
-      setStoreId(store.id);
       setStoreType(
-        store.store_type === "physical"
-          ? "physical"
-          : "digital"
+        store.store_type === "physical" ? "physical" : "digital"
       );
-            const { data, error: ordersError } = await supabase
+
+      const { data, error: ordersError } = await supabase
         .from("orders")
         .select(`
           id,
@@ -94,150 +91,183 @@ export default function OrdersPage() {
   function getStatusStyle(status: string) {
     switch (status.toLowerCase()) {
       case "pending":
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
 
       case "processing":
-        return "bg-blue-100 text-blue-700";
+        return "bg-blue-50 text-blue-700 border-blue-200";
 
       case "completed":
-        return "bg-green-100 text-green-700";
+        return "bg-green-50 text-green-700 border-green-200";
 
       case "cancelled":
-        return "bg-red-100 text-red-700";
+        return "bg-red-50 text-red-700 border-red-200";
 
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-50 text-gray-700 border-gray-200";
     }
   }
 
   function formatDate(date: string) {
     return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
       month: "short",
       day: "numeric",
+      year: "numeric",
     });
   }
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-xl font-semibold text-pink-600">
-          Loading orders...
-        </p>
-      </div>
+      <main className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center text-gray-500 shadow-sm">
+            Loading orders...
+          </div>
+        </div>
+      </main>
     );
   }
-    return (
-    <main className="min-h-screen bg-[#FAFAFC]">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-6">
-          <div>
-            <h1 className="text-3xl font-bold">Orders</h1>
 
-            <p className="mt-2 text-gray-500">
-              Manage all customer orders
+  return (
+    <main className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="border-b border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+              Orders
+            </h1>
+
+            <p className="mt-1 text-xs text-gray-500 sm:text-sm">
+              Manage customer orders
             </p>
           </div>
 
-          <ViewStoreButton />
+          <div className="shrink-0">
+            <ViewStoreButton />
+          </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-8 py-10">
+      {/* Content */}
+      <div className="mx-auto max-w-6xl px-3 py-5 sm:px-6 sm:py-8">
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </div>
         )}
 
         {!error && orders.length === 0 && (
-          <div className="rounded-3xl bg-white p-12 text-center shadow">
-            <h2 className="text-2xl font-bold">
+          <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+            <h2 className="text-lg font-bold text-gray-900">
               No orders found
             </h2>
 
-            <p className="mt-3 text-gray-500">
+            <p className="mt-2 text-sm text-gray-500">
               Your customers haven't placed any orders yet.
             </p>
           </div>
         )}
 
         {orders.length > 0 && (
-          <div className="overflow-hidden rounded-3xl bg-white shadow">
-            <table className="w-full">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="p-5 text-left">Customer</th>
-                  <th className="p-5 text-left">Phone</th>
-                  <th className="p-5 text-left">WhatsApp</th>
-                  <th className="p-5 text-left">Total</th>
-                  <th className="p-5 text-left">Status</th>
-                  <th className="p-5 text-left">Date</th>
-                  <th className="p-5 text-left">Action</th>
-                </tr>
-              </thead>
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            {/* List Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 sm:px-5">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  All Orders
+                </p>
 
-              <tbody>
-                {orders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="border-t hover:bg-gray-50"
-                  >
-                    <td className="p-5 font-semibold">
-                      {order.customer_name}
-                    </td>
+                <p className="text-xs text-gray-400">
+                  {orders.length}{" "}
+                  {orders.length === 1 ? "order" : "orders"}
+                </p>
+              </div>
+            </div>
 
-                    <td className="p-5">
-                      {order.phone}
-                    </td>
+            {/* Orders */}
+            <div className="divide-y divide-gray-100">
+              {orders.map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/orders/${order.id}`}
+                  className="block cursor-pointer px-4 py-3 transition hover:bg-gray-50 active:bg-gray-100 sm:px-5 sm:py-4"
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Customer Avatar */}
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pink-100 text-sm font-bold text-pink-600 sm:h-10 sm:w-10">
+                      {order.customer_name?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
 
-                    <td className="p-5">
-                      {order.whatsapp}
-                    </td>
+                    {/* Customer Information */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <h3 className="truncate text-sm font-semibold text-gray-900">
+                          {order.customer_name}
+                        </h3>
 
-                    <td className="p-5 font-bold text-pink-600">
-                      ${Number(order.total).toFixed(2)}
-                    </td>
+                        <span
+                          className={`hidden rounded-full border px-2 py-0.5 text-[10px] font-semibold sm:inline-flex ${getStatusStyle(
+                            order.status
+                          )}`}
+                        >
+                          {order.status}
+                        </span>
+                      </div>
 
-                    <td className="p-5">
+                      <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-gray-500">
+                        <span className="truncate">
+                          {order.phone}
+                        </span>
+
+                        <span className="text-gray-300">�</span>
+
+                        <span className="shrink-0">
+                          {formatDate(order.created_at)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Amount */}
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-bold text-pink-600">
+                        ${Number(order.total).toFixed(2)}
+                      </p>
+
                       <span
-                        className={`rounded-full px-3 py-1 text-sm font-semibold ${getStatusStyle(
+                        className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold sm:hidden ${getStatusStyle(
                           order.status
                         )}`}
                       >
                         {order.status}
                       </span>
-                    </td>
+                    </div>
+                  </div>
 
-                    <td className="p-5">
-                      {formatDate(order.created_at)}
-                    </td>
+                  {/* Download */}
+                  {storeType === "digital" &&
+                    order.status === "completed" &&
+                    order.download_url && (
+                      <div className="mt-2 ml-12">
+                        <span
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
 
-                    <td className="p-5">
-  {storeType === "digital" &&
-  order.status === "completed" &&
-  order.download_url ? (
-    <a
-      href={order.download_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
-    >
-      Download Product
-    </a>
-  ) : (
-    <Link
-      href={`/orders/${order.id}`}
-      className="inline-flex rounded-xl bg-pink-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-700"
-    >
-      View Details
-    </Link>
-  )}
-</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                            window.open(
+                              order.download_url!,
+                              "_blank",
+                              "noopener,noreferrer"
+                            );
+                          }}
+                          className="text-xs font-semibold text-pink-600 hover:text-pink-700"
+                        >
+                          Download
+                        </span>
+                      </div>
+                    )}
+                </Link>
+              ))}
+            </div>
           </div>
         )}
       </div>

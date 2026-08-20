@@ -1,15 +1,19 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-export default function CustomerSignupPage() {
+function CustomerSignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const redirect = searchParams.get("redirect");
+
+  const safeRedirect = redirect && redirect.startsWith("/") && !redirect.startsWith("//")
+    ? redirect
+    : "/";
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -68,8 +72,8 @@ export default function CustomerSignupPage() {
       alert(customerError.message);
       return;
     }
-        if (redirect) {
-      router.replace(redirect);
+        if (safeRedirect !== "/") {
+      router.replace(safeRedirect);
     } else {
       router.replace("/");
     }
@@ -91,6 +95,16 @@ export default function CustomerSignupPage() {
           <p className="mt-2 text-gray-500">
             Sign up as a customer
           </p>
+        </div>
+
+        <div className="mb-6 flex justify-end">
+          <button aria-label="Home"
+            type="button"
+            onClick={() => router.push("/")}
+            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+          </button>
         </div>
 
         <form onSubmit={handleSignup} className="space-y-6">
@@ -179,8 +193,8 @@ export default function CustomerSignupPage() {
 
           <Link
             href={
-              redirect
-                ? `/customer/login?redirect=${encodeURIComponent(redirect)}`
+              safeRedirect !== "/"
+                ? `/customer/login?redirect=${encodeURIComponent(safeRedirect)}`
                 : "/customer/login"
             }
             className="ml-2 font-semibold text-[#D94680]"
@@ -191,5 +205,19 @@ export default function CustomerSignupPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function CustomerSignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-[#FAFAFC] px-6">
+          <p className="text-gray-500">Loading...</p>
+        </main>
+      }
+    >
+      <CustomerSignupForm />
+    </Suspense>
   );
 }

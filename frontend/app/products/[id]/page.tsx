@@ -168,11 +168,18 @@ export default function EditProductPage() {
       <div className="min-h-screen p-8">
         <div className="bg-white rounded-2xl p-8 text-center">
           <p className="text-red-600 mb-4">{errorMessage}</p>
-          <button
-            onClick={() => router.push("/products")}
+          <button aria-label="Back"
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/products");
+              }
+            }}
             className="px-6 py-2 bg-[#D94680] text-white rounded-lg font-bold hover:opacity-90"
           >
-            Back to Products
+            <span aria-hidden="true">←</span>
           </button>
         </div>
       </div>

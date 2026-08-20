@@ -114,13 +114,27 @@ const userId = authData.session.user.id;
 
       <div className="w-full max-w-2xl rounded-3xl bg-white p-10 shadow-xl">
 
-        <h1 className="text-4xl font-bold">
-          Create Your Store
-        </h1>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold">
+              Create Your Store
+            </h1>
 
-        <p className="mt-3 text-gray-500">
-          Your professional store will be ready in seconds.
-        </p>
+            <p className="mt-3 text-gray-500">
+              Your professional store will be ready in seconds.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button aria-label="Home"
+              type="button"
+              onClick={() => router.push("/")}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+            </button>
+          </div>
+        </div>
 
         <form
           onSubmit={handleCreateStore}

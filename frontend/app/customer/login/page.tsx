@@ -17,6 +17,10 @@ export default function CustomerLoginPage() {
       ? new URLSearchParams(window.location.search).get("redirect")
       : null;
 
+  const safeRedirect = redirect && redirect.startsWith("/") && !redirect.startsWith("//")
+    ? redirect
+    : "/";
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
 
@@ -45,12 +49,7 @@ export default function CustomerLoginPage() {
         .single();
 
       if (customer) {
-        // Customer found — redirect
-        if (redirect) {
-          router.replace(redirect);
-        } else {
-          router.replace("/");
-        }
+        router.replace(safeRedirect);
         return;
       }
     }
@@ -68,6 +67,16 @@ export default function CustomerLoginPage() {
           </div>
           <h1 className="mt-6 text-4xl font-bold">Customer Login</h1>
           <p className="mt-2 text-gray-500">Sign in to your customer account</p>
+        </div>
+
+        <div className="mb-6 flex justify-end">
+          <button aria-label="Home"
+            type="button"
+            onClick={() => router.push("/")}
+            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+          </button>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
@@ -105,8 +114,8 @@ export default function CustomerLoginPage() {
           Don't have an account?
           <Link
             href={
-              redirect
-                ? `/customer/signup?redirect=${encodeURIComponent(redirect)}`
+              safeRedirect !== "/"
+                ? `/customer/signup?redirect=${encodeURIComponent(safeRedirect)}`
                 : "/customer/signup"
             }
             className="ml-2 font-semibold text-[#D94680]"

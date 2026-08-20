@@ -1,19 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function ProductPage() {
+  const router = useRouter();
+
   return (
     <main className="min-h-screen bg-[#FAFAFC]">
 
       <div className="mx-auto max-w-7xl px-8 py-10">
 
-        <Link
-          href="/"
+        <button aria-label="Back"
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push("/");
+            }
+          }}
           className="text-sm font-semibold text-pink-600"
         >
-          ← Back
-        </Link>
+          <span aria-hidden="true">←</span>
+        </button>
 
         <div className="mt-8 grid gap-10 lg:grid-cols-2">
 

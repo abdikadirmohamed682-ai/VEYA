@@ -1,9 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function RegisterPage() {
+  const router = useRouter();
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -15,7 +18,32 @@ export default function RegisterPage() {
   const [passportImage, setPassportImage] = useState<File | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null);
 
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  async function uploadImage(
+    file: File,
+    folder: string,
+    userId: string
+  ): Promise<string> {
+    const ext = file.name.split(".").pop() || "png";
+    const timestamp = Date.now();
+    const path = `${folder}/${userId}-${timestamp}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("user-images")
+      .upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(`Upload failed: ${uploadError.message}`);
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("user-images")
+      .getPublicUrl(path);
+
+    return publicUrlData.publicUrl;
+  }
 
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,9 +70,6 @@ export default function RegisterPage() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: window.location.origin + "/auth/callback",
-      },
     });
 
     if (signUpError) {
@@ -59,7 +84,28 @@ export default function RegisterPage() {
 
     const userId = signUpData.user.id;
 
-    // Step 2: Create user profile in database
+    // Step 2: Upload images to Supabase Storage
+    let profileImageUrl: string | null = null;
+    let passportImageUrl: string | null = null;
+
+    try {
+      if (profileImage) {
+        profileImageUrl = await uploadImage(profileImage, "profile-images", userId);
+      }
+
+      if (passportImage) {
+        passportImageUrl = await uploadImage(passportImage, "passport-images", userId);
+      }
+    } catch (err) {
+      alert(
+        `Image Upload Error: ${
+          err instanceof Error ? err.message : "Failed to upload images."
+        }`
+      );
+      return;
+    }
+
+    // Step 3: Create user profile in database
     const { error: profileError } = await supabase.from("users").insert([
       {
         id: userId,
@@ -69,8 +115,8 @@ export default function RegisterPage() {
         whatsapp: whatsapp,
         payment_number: paymentNumber,
         national_id: paymentNumber,
-        passport_image: null,
-        profile_image: null,
+        passport_image: passportImageUrl,
+        profile_image: profileImageUrl,
       },
     ]);
 
@@ -79,10 +125,39 @@ export default function RegisterPage() {
       return;
     }
 
-    // Step 3: Account created. Do NOT sign the user in and do NOT redirect.
-    setSuccessMessage(
-      "Your account has been created.\nPlease check your email and verify your account before logging in."
-    );
+    // Step 4: Ensure session is established
+    let session = signUpData.session;
+
+    if (!session) {
+      // If no session after signup, sign in immediately
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        alert(`SignIn Error: ${signInError.message}`);
+        return;
+      }
+
+      session = signInData.session;
+    }
+
+    if (!session) {
+      alert("Failed to establish authenticated session. Please try again.");
+      return;
+    }
+
+    // Step 5: Verify session is valid
+    const { data: sessionCheck, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !sessionCheck?.session) {
+      alert(`Session Verification Error: ${sessionError?.message || "No active session"}`);
+      return;
+    }
+
+    // Step 6: Redirect to Create Store
+    router.push("/create-store");
   }
 
   return (
@@ -106,11 +181,28 @@ export default function RegisterPage() {
 
         </div>
 
-        {successMessage && (
-          <div className="mb-6 rounded-xl border border-green-300 bg-green-50 p-4 text-center text-green-800 whitespace-pre-line">
-            {successMessage}
-          </div>
-        )}
+        <div className="mb-6 flex justify-end gap-3">
+          <button aria-label="Back"
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/");
+              }
+            }}
+            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+          >
+            <span aria-hidden="true">←</span>
+          </button>
+          <button aria-label="Home"
+            type="button"
+            onClick={() => router.push("/")}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+          </button>
+        </div>
 
         <form
           onSubmit={handleRegister}
@@ -270,4 +362,4 @@ export default function RegisterPage() {
     </main>
   );
 }
-        
+

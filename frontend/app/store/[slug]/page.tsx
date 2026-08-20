@@ -20,7 +20,6 @@ interface Product {
   main_image_url: string | null;
   status: string;
   is_featured?: boolean | null;
-  views?: number | null;
 }
 
 export default async function StorePage({
@@ -43,13 +42,14 @@ export default async function StorePage({
   const { data: products } = await supabase
     .from("products")
     .select(
-      "id, product_name, description, price, category, main_image_url, status, is_featured, views"
+      "id, product_name, description, price, category, main_image_url, status, is_featured"
     )
     .eq("store_id", storeData.id)
     .eq("status", "active");
 
   return (
     <StorefrontClient
+      storeId={storeData.id}
       storeName={storeData.store_name}
       storeDescription={storeData.description}
       storeLogo={storeData.logo}

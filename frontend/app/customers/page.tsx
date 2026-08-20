@@ -29,12 +29,17 @@ export default function CustomersPage() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
+        setLoading(true);
+        setError(null);
+
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
         if (!session) {
-          throw new Error("Your session has expired. Please log in again.");
+          throw new Error(
+            "Your session has expired. Please log in again."
+          );
         }
 
         const { data: store, error: storeError } = await supabase
@@ -44,12 +49,16 @@ export default function CustomersPage() {
           .single();
 
         if (storeError || !store) {
-          throw new Error(storeError?.message || "Store not found.");
+          throw new Error(
+            storeError?.message || "Store not found."
+          );
         }
 
         const { data, error } = await supabase
           .from("orders")
-          .select("customer_name, phone, total, status, created_at")
+          .select(
+            "customer_name, phone, total, status, created_at"
+          )
           .eq("store_id", store.id)
           .eq("status", "completed")
           .order("created_at", { ascending: true });
@@ -66,14 +75,21 @@ export default function CustomersPage() {
         records.forEach((order) => {
           const key = order.phone || order.customer_name;
           const existing = customerMap.get(key);
-          const orderDate = new Date(order.created_at).toISOString();
+
+          const orderDate = new Date(
+            order.created_at
+          ).toISOString();
 
           if (existing) {
             existing.order_count += 1;
             existing.total_spent += Number(order.total || 0);
-            if (orderDate > existing.last_order_date) {
+
+            if (
+              orderDate > existing.last_order_date
+            ) {
               existing.last_order_date = orderDate;
             }
+
             customerMap.set(key, existing);
           } else {
             customerMap.set(key, {
@@ -86,13 +102,21 @@ export default function CustomersPage() {
           }
         });
 
-        const customerList = Array.from(customerMap.values()).sort(
-          (a, b) => Number(new Date(b.last_order_date)) - Number(new Date(a.last_order_date))
+        const customerList = Array.from(
+          customerMap.values()
+        ).sort(
+          (a, b) =>
+            Number(new Date(b.last_order_date)) -
+            Number(new Date(a.last_order_date))
         );
 
         setCustomers(customerList);
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : String(error);
+
         setError(message);
       } finally {
         setLoading(false);
@@ -111,84 +135,167 @@ export default function CustomersPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <main className="min-h-screen w-full max-w-full overflow-x-hidden bg-gray-50">
       {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-10">
-        <div className="flex items-center justify-between gap-4 px-8 py-6">
-          <div>
-            <h1 className="text-3xl font-bold">Customers</h1>
-            <p className="mt-1 text-gray-500">View customers from completed orders.</p>
+      <header className="border-b border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+              Customers
+            </h1>
+
+            <p className="mt-1 text-xs text-gray-500 sm:text-sm">
+              Customers from completed orders
+            </p>
           </div>
-          <ViewStoreButton />
+
+          <div className="shrink-0">
+            <ViewStoreButton />
+          </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="p-8">
-        <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-xl shadow-pink-100/40 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-[#D94680]">Customer Insights</p>
-            <h2 className="mt-2 text-2xl font-bold text-gray-900">Customers with completed orders</h2>
-          </div>
-          <div className="rounded-3xl bg-[#FCE7F3] px-5 py-4 text-sm font-semibold text-[#B91C7A]">
-            {loading ? "Loading..." : `${customers.length} customers`}
+      <div className="mx-auto max-w-6xl px-3 py-5 sm:px-6 sm:py-8">
+        {/* Summary */}
+        <div className="mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:mb-6 sm:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-pink-500 sm:text-xs">
+                Customer Insights
+              </p>
+
+              <h2 className="mt-1 truncate text-base font-bold text-gray-900 sm:text-xl">
+                Your customers
+              </h2>
+            </div>
+
+            <div className="shrink-0 rounded-full bg-pink-50 px-3 py-2 text-xs font-semibold text-pink-600 sm:px-4">
+              {loading
+                ? "Loading..."
+                : `${customers.length} ${
+                    customers.length === 1
+                      ? "customer"
+                      : "customers"
+                  }`}
+            </div>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-3xl bg-white shadow">
-          <table className="w-full min-w-full border-collapse text-left">
-            <thead className="border-b bg-gray-50">
-              <tr>
-                <th className="p-5 text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Customer</th>
-                <th className="p-5 text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Phone</th>
-                <th className="p-5 text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Orders</th>
-                <th className="p-5 text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Total Spent</th>
-                <th className="p-5 text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Last Order</th>
-                <th className="p-5 text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-500">
-                    Loading customers...
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-red-600">
-                    {error}
-                  </td>
-                </tr>
-              ) : customers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-500">
-                    No customers found.
-                  </td>
-                </tr>
-              ) : (
-                customers.map((customer) => (
-                  <tr key={customer.phone} className="border-b hover:bg-gray-50">
-                    <td className="p-5 font-semibold text-gray-900">{customer.customer_name}</td>
-                    <td className="p-5 text-gray-600">{customer.phone}</td>
-                    <td className="p-5 text-gray-900">{customer.order_count}</td>
-                    <td className="p-5 font-semibold text-[#D94680]">${customer.total_spent.toFixed(2)}</td>
-                    <td className="p-5 text-gray-600">{formatDate(customer.last_order_date)}</td>
-                    <td className="p-5">
-                      <Link
-                        href={`/customers/${encodeURIComponent(customer.phone)}`}
-                        className="inline-flex rounded-3xl bg-[#D94680] px-5 py-2 text-sm font-semibold text-white transition hover:bg-pink-600"
-                      >
-                        View details
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        {/* Error */}
+        {error && (
+          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && !error && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+            Loading customers...
+          </div>
+        )}
+
+        {/* Empty */}
+        {!loading &&
+          !error &&
+          customers.length === 0 && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+              <h2 className="text-lg font-bold text-gray-900">
+                No customers found
+              </h2>
+
+              <p className="mt-2 text-sm text-gray-500">
+                Customers will appear here after completed
+                orders.
+              </p>
+            </div>
+          )}
+
+        {/* Customers */}
+        {!loading &&
+          !error &&
+          customers.length > 0 && (
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              {/* List header */}
+              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 sm:px-5">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    All Customers
+                  </p>
+
+                  <p className="text-xs text-gray-400">
+                    Based on completed orders
+                  </p>
+                </div>
+              </div>
+
+              {/* Customer list */}
+              <div className="divide-y divide-gray-100">
+                {customers.map((customer) => (
+                  <Link
+                    key={customer.phone || customer.customer_name}
+                    href={`/customers/${encodeURIComponent(
+                      customer.phone
+                    )}`}
+                    className="block px-4 py-3 transition hover:bg-gray-50 active:bg-gray-100 sm:px-5 sm:py-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-100 text-sm font-bold text-pink-600 sm:h-11 sm:w-11">
+                        {customer.customer_name
+                          ?.charAt(0)
+                          ?.toUpperCase() || "?"}
+                      </div>
+
+                      {/* Customer info */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <h3 className="truncate text-sm font-semibold text-gray-900 sm:text-base">
+                            {customer.customer_name}
+                          </h3>
+                        </div>
+
+                        <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-gray-500">
+                          <span className="truncate">
+                            {customer.phone}
+                          </span>
+
+                          <span className="text-gray-300">
+                            •
+                          </span>
+
+                          <span className="shrink-0">
+                            {customer.order_count}{" "}
+                            {customer.order_count === 1
+                              ? "order"
+                              : "orders"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Spending */}
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-bold text-pink-600">
+                          $
+                          {customer.total_spent.toFixed(
+                            2
+                          )}
+                        </p>
+
+                        <p className="mt-1 text-[10px] text-gray-400 sm:text-xs">
+                          {formatDate(
+                            customer.last_order_date
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
       </div>
-    </div>
+    </main>
   );
 }

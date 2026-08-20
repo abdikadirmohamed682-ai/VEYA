@@ -1,0 +1,48 @@
+
+> frontend@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.6:3000
+- Environments: .env.local
+✓ Ready in 2.5s
+Creating turbopack project { dir: 'C:\\Users\\Admin\\Projects\\VEYA\\frontend', testMode: true }
+
+○ Compiling / ...
+SUPABASE CONFIG: {
+  url: 'https://wqmqvxujaxhpacewmbdj.supabase.co',
+  hasAnonKey: true,
+  anonKeyLength: 208
+}
+ GET / 200 in 11.7s (next.js: 10.8s, application-code: 912ms)
+ GET / 200 in 266ms (next.js: 62ms, application-code: 204ms)
+ GET / 200 in 126ms (next.js: 15ms, application-code: 112ms)
+ GET / 200 in 129ms (next.js: 11ms, application-code: 119ms)
+ GET /admin 200 in 2.8s (next.js: 2.6s, application-code: 219ms)
+ GET /admin/login 200 in 1615ms (next.js: 1511ms, application-code: 104ms)
+ GET /dashboard 200 in 2.1s (next.js: 1818ms, application-code: 275ms)
+ GET /store 200 in 941ms (next.js: 810ms, application-code: 131ms)
+ GET /customers 200 in 1876ms (next.js: 1576ms, application-code: 300ms)
+ GET /products 200 in 2.1s (next.js: 1954ms, application-code: 170ms)
+ GET /orders 200 in 1532ms (next.js: 1419ms, application-code: 114ms)
+ GET /login 200 in 1263ms (next.js: 1109ms, application-code: 154ms)
+ GET /register 200 in 1313ms (next.js: 1215ms, application-code: 98ms)
+ GET /settings 200 in 1873ms (next.js: 1742ms, application-code: 131ms)
+SUPABASE CONFIG: {
+  url: 'https://wqmqvxujaxhpacewmbdj.supabase.co',
+  hasAnonKey: true,
+  anonKeyLength: 208
+}
+SUPABASE CONFIG: {
+  url: 'https://wqmqvxujaxhpacewmbdj.supabase.co',
+  hasAnonKey: true,
+  anonKeyLength: 208
+}
+ GET /store/venom 200 in 10.3s (next.js: 5.7s, application-code: 4.7s)
+✓ Finished writing to filesystem cache in 11.0s
+ GET /admin 200 in 1740ms (next.js: 263ms, application-code: 1477ms)
+○ Compiling /admin/stores/[id] ...
+ GET /admin/stores/34bab871-3a69-4955-a29e-af83ff44591e 200 in 16.3s (next.js: 15.3s, application-code: 980ms)
+ GET /admin/stores/34bab871-3a69-4955-a29e-af83ff44591e 200 in 171ms (next.js: 40ms, application-code: 131ms)
+^C^C
