@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface Product {
   id: string;
@@ -34,6 +35,36 @@ export default function StorefrontClient({
 }: StorefrontClientProps) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function checkCustomerSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (mounted) {
+        setIsLoggedIn(!!session);
+      }
+    }
+
+    checkCustomerSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setIsLoggedIn(!!session);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const categories = useMemo(() => {
     const values = products
@@ -91,6 +122,14 @@ export default function StorefrontClient({
             </div>
           </div>
 
+          {isLoggedIn && (
+            <Link
+              href="/customer/orders"
+              className="shrink-0 rounded-xl bg-[#D94680] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#c73570]"
+            >
+              My Orders
+            </Link>
+          )}
         </div>
       </header>
 

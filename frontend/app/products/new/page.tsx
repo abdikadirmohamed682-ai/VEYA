@@ -105,6 +105,7 @@ export default function AddProductPage() {
     const ext = file.name.lastIndexOf(".") !== -1
       ? file.name.slice(file.name.lastIndexOf("."))
       : "";
+
     const filePath = `product-downloads/${randomId}${ext}`;
 
     const { error: uploadError } = await supabase.storage
@@ -264,29 +265,6 @@ export default function AddProductPage() {
           <div>
             <h1 className="text-4xl font-bold">Add Product</h1>
             <p className="mt-2 text-gray-500">Publish a new product to your store.</p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== "undefined" && window.history.length > 1) {
-                  router.back();
-                } else {
-                  router.push("/dashboard");
-                }
-              }}
-              className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-            >
-              <span aria-hidden="true">?</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard")}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
-            >
-              <span aria-hidden="true">�</span>
-            </button>
           </div>
         </div>
 
