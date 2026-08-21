@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 interface ProductNotification {
@@ -23,6 +23,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+
   const [products, setProducts] = useState<ProductNotification[]>([]);
   const [open, setOpen] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -31,9 +33,22 @@ export default function AdminLayout({
   useEffect(() => {
     let mounted = true;
 
+    // Do not run admin authentication on the login page
+    if (pathname === "/admin/login") {
+      setChecking(false);
+      setAuthorized(false);
+
+      return () => {
+        mounted = false;
+      };
+    }
+
     async function verify() {
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const {
+          data: sessionData,
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
         if (sessionError || !sessionData?.session) {
           if (mounted) {
@@ -46,6 +61,7 @@ export default function AdminLayout({
 
         if (email !== ADMIN_EMAIL) {
           await supabase.auth.signOut();
+
           if (mounted) {
             router.replace("/admin/login");
           }
@@ -68,10 +84,10 @@ export default function AdminLayout({
     return () => {
       mounted = false;
     };
-  }, [router]);
+  }, [pathname, router]);
 
   useEffect(() => {
-    if (!authorized) return;
+    if (!authorized || pathname === "/admin/login") return;
 
     const fetchNotifications = async () => {
       const { data, error } = await supabase
@@ -99,13 +115,20 @@ export default function AdminLayout({
     const interval = setInterval(fetchNotifications, 10000);
 
     return () => clearInterval(interval);
-  }, [authorized]);
+  }, [authorized, pathname]);
+
+  // Login page should render normally without admin authentication UI
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
+  }
 
   if (checking || !authorized) {
     return (
       <main className="min-h-screen bg-[#FAFAFC] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500">Checking admin authentication…</p>
+          <p className="text-gray-500">
+            Checking admin authentication…
+          </p>
         </div>
       </main>
     );
