@@ -33,6 +33,9 @@ export const metadata: Metadata = {
       "Create your own digital or physical store with VEYA, showcase your products, and sell online with ease.",
     type: "website",
   },
+  verification: {
+    google: "olZbeWe6iTVS198sJ1SL9nPTTRsdimTaS3Uypgbt_wQ",
+  },
 };
 
 export const viewport: Viewport = {
