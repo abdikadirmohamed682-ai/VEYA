@@ -45,8 +45,24 @@ export default function StorefrontClient({
         data: { session },
       } = await supabase.auth.getSession();
 
+      if (!session) {
+        if (mounted) {
+          setIsLoggedIn(false);
+        }
+        return;
+      }
+
+      // Only customers should see "My Orders".
+      // Merchants/admins may also have an authenticated session,
+      // but they are not stored in the customers table.
+      const { data: customer, error } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
       if (mounted) {
-        setIsLoggedIn(!!session);
+        setIsLoggedIn(!error && !!customer);
       }
     }
 
@@ -54,10 +70,8 @@ export default function StorefrontClient({
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
-        setIsLoggedIn(!!session);
-      }
+    } = supabase.auth.onAuthStateChange(() => {
+      checkCustomerSession();
     });
 
     return () => {
@@ -122,6 +136,7 @@ export default function StorefrontClient({
             </div>
           </div>
 
+          {/* My Orders is shown only to customers */}
           {isLoggedIn && (
             <Link
               href="/customer/orders"

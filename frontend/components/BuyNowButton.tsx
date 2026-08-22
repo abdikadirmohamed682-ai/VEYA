@@ -23,57 +23,86 @@ export default function BuyNowButton({
 }: BuyNowButtonProps) {
   const router = useRouter();
 
-  const [status, setStatus] = useState<"idle" | "processing" | "self-purchase">("idle");
-
+  const [status, setStatus] = useState<
+    "idle" | "processing" | "self-purchase"
+  >("idle");
 
   const handleBuyNow = async () => {
-    if (disabled) return;
+    // Prevent multiple clicks
+    if (disabled || status === "processing") return;
 
+    // Immediately lock the button
     setStatus("processing");
 
-    const { data: { session } } = await supabase.auth.getSession();
+    try {
+      // Check authentication
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    if (!session) {
-      router.push(`/customer/login?redirect=/buy/${product_id}`);
-      return;
+      if (!session) {
+        router.push(`/customer/login?redirect=/buy/${product_id}`);
+        return;
+      }
+
+      // Check store owner
+      const { data: store, error: storeError } = await supabase
+        .from("stores")
+        .select("user_id")
+        .eq("id", store_id)
+        .single();
+
+      if (storeError) {
+        console.error("Error checking store owner:", storeError);
+        setStatus("idle");
+        return;
+      }
+
+      // Prevent the store owner from buying their own product
+      if (store && store.user_id === session.user.id) {
+        setStatus("self-purchase");
+        return;
+      }
+
+      // Check customer account
+      const { data: customer, error: customerError } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("id", session.user.id)
+        .single();
+
+      if (customerError || !customer) {
+        router.push(`/customer/login?redirect=/buy/${product_id}`);
+        return;
+      }
+
+      // Customer can continue to buy
+      router.push(`/buy/${product_id}`);
+    } catch (error) {
+      console.error("Buy Now error:", error);
+
+      // Allow trying again only if a real error occurred
+      setStatus("idle");
     }
-
-    // Check if the user is the store owner
-    const { data: store } = await supabase
-      .from("stores")
-      .select("user_id")
-      .eq("id", store_id)
-      .single();
-
-    if (store && store.user_id === session.user.id) {
-      setStatus("self-purchase");
-      return;
-    }
-
-    const { data: customer } = await supabase
-      .from("customers")
-      .select("id")
-      .eq("id", session.user.id)
-      .single();
-
-    if (!customer) {
-      router.push(`/customer/login?redirect=/buy/${product_id}`);
-      return;
-    }
-
-    router.push(`/buy/${product_id}`);
   };
-
 
   return (
     <button
       type="button"
       onClick={handleBuyNow}
-      disabled={disabled || status === "processing"}
-      className={`w-full rounded-3xl border border-[#D94680] px-6 py-4 text-lg font-bold text-[#D94680] transition ${
+      disabled={
+        disabled ||
+        status === "processing" ||
+        status === "self-purchase"
+      }
+      className={`w-full rounded-3xl border px-6 py-4 text-lg font-bold transition ${
         disabled
-          ? "cursor-not-allowed bg-gray-100 text-gray-500"
-          : "bg-white hover:bg-[#FCE7F3]"
+          ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-500"
+          : status === "self-purchase"
+          ? "cursor-not-allowed border-red-200 bg-red-50 text-red-600"
+          : status === "processing"
+          ? "cursor-wait border-gray-200 bg-gray-100 text-gray-500"
+          : "border-[#D94680] bg-white text-[#D94680] hover:bg-[#FCE7F3]"
       }`}
     >
       {disabled

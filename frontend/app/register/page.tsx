@@ -18,6 +18,8 @@ export default function RegisterPage() {
   const [passportImage, setPassportImage] = useState<File | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null);
 
+  const [processing, setProcessing] = useState(false);
+
   async function uploadImage(
     file: File,
     folder: string,
@@ -48,6 +50,8 @@ export default function RegisterPage() {
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
+    if (processing) return;
+
     if (
       !fullName ||
       !email ||
@@ -66,98 +70,119 @@ export default function RegisterPage() {
       return;
     }
 
-    // Step 1: Create authentication user
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (signUpError) {
-      alert(`SignUp Error: ${signUpError.message}`);
-      return;
-    }
-
-    if (!signUpData?.user?.id) {
-      alert("Failed to create authentication user. No user ID returned.");
-      return;
-    }
-
-    const userId = signUpData.user.id;
-
-    // Step 2: Upload images to Supabase Storage
-    let profileImageUrl: string | null = null;
-    let passportImageUrl: string | null = null;
+    setProcessing(true);
 
     try {
-      if (profileImage) {
-        profileImageUrl = await uploadImage(profileImage, "profile-images", userId);
-      }
+      // Step 1: Create authentication user
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email,
+          password,
+        });
 
-      if (passportImage) {
-        passportImageUrl = await uploadImage(passportImage, "passport-images", userId);
-      }
-    } catch (err) {
-      alert(
-        `Image Upload Error: ${
-          err instanceof Error ? err.message : "Failed to upload images."
-        }`
-      );
-      return;
-    }
-
-    // Step 3: Create user profile in database
-    const { error: profileError } = await supabase.from("users").insert([
-      {
-        id: userId,
-        full_name: fullName,
-        email: email,
-        phone: phone,
-        whatsapp: whatsapp,
-        payment_number: paymentNumber,
-        national_id: paymentNumber,
-        passport_image: passportImageUrl,
-        profile_image: profileImageUrl,
-      },
-    ]);
-
-    if (profileError) {
-      alert(`Profile Creation Error: ${profileError.message}`);
-      return;
-    }
-
-    // Step 4: Ensure session is established
-    let session = signUpData.session;
-
-    if (!session) {
-      // If no session after signup, sign in immediately
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        alert(`SignIn Error: ${signInError.message}`);
+      if (signUpError) {
+        alert(`SignUp Error: ${signUpError.message}`);
         return;
       }
 
-      session = signInData.session;
+      if (!signUpData?.user?.id) {
+        alert("Failed to create authentication user. No user ID returned.");
+        return;
+      }
+
+      const userId = signUpData.user.id;
+
+      // Step 2: Upload images to Supabase Storage
+      let profileImageUrl: string | null = null;
+      let passportImageUrl: string | null = null;
+
+      try {
+        if (profileImage) {
+          profileImageUrl = await uploadImage(
+            profileImage,
+            "profile-images",
+            userId
+          );
+        }
+
+        if (passportImage) {
+          passportImageUrl = await uploadImage(
+            passportImage,
+            "passport-images",
+            userId
+          );
+        }
+      } catch (err) {
+        alert(
+          `Image Upload Error: ${
+            err instanceof Error ? err.message : "Failed to upload images."
+          }`
+        );
+        return;
+      }
+
+      // Step 3: Create user profile in database
+      const { error: profileError } = await supabase.from("users").insert([
+        {
+          id: userId,
+          full_name: fullName,
+          email: email,
+          phone: phone,
+          whatsapp: whatsapp,
+          payment_number: paymentNumber,
+          national_id: paymentNumber,
+          passport_image: passportImageUrl,
+          profile_image: profileImageUrl,
+        },
+      ]);
+
+      if (profileError) {
+        alert(`Profile Creation Error: ${profileError.message}`);
+        return;
+      }
+
+      // Step 4: Ensure session is established
+      let session = signUpData.session;
+
+      if (!session) {
+        // If no session after signup, sign in immediately
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+        if (signInError) {
+          alert(`SignIn Error: ${signInError.message}`);
+          return;
+        }
+
+        session = signInData.session;
+      }
+
+      if (!session) {
+        alert("Failed to establish authenticated session. Please try again.");
+        return;
+      }
+
+      // Step 5: Verify session is valid
+      const { data: sessionCheck, error: sessionError } =
+        await supabase.auth.getSession();
+
+      if (sessionError || !sessionCheck?.session) {
+        alert(
+          `Session Verification Error: ${
+            sessionError?.message || "No active session"
+          }`
+        );
+        return;
+      }
+
+      // Step 6: Redirect to Create Store
+      router.push("/create-store");
+    } finally {
+      setProcessing(false);
     }
-
-    if (!session) {
-      alert("Failed to establish authenticated session. Please try again.");
-      return;
-    }
-
-    // Step 5: Verify session is valid
-    const { data: sessionCheck, error: sessionError } = await supabase.auth.getSession();
-
-    if (sessionError || !sessionCheck?.session) {
-      alert(`Session Verification Error: ${sessionError?.message || "No active session"}`);
-      return;
-    }
-
-    // Step 6: Redirect to Create Store
-    router.push("/create-store");
   }
 
   return (
@@ -182,10 +207,14 @@ export default function RegisterPage() {
         </div>
 
         <div className="mb-6 flex justify-end gap-3">
-          <button aria-label="Back"
+          <button
+            aria-label="Back"
             type="button"
             onClick={() => {
-              if (typeof window !== "undefined" && window.history.length > 1) {
+              if (
+                typeof window !== "undefined" &&
+                window.history.length > 1
+              ) {
                 router.back();
               } else {
                 router.push("/");
@@ -195,19 +224,35 @@ export default function RegisterPage() {
           >
             <span aria-hidden="true">←</span>
           </button>
-          <button aria-label="Home"
+
+          <button
+            aria-label="Home"
             type="button"
             onClick={() => router.push("/")}
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m3 10 9-7 9 7" />
+              <path d="M5 9v11h14V9" />
+              <path d="M9 20v-6h6v6" />
+            </svg>
           </button>
         </div>
 
         <form
           onSubmit={handleRegister}
           className="space-y-6"
-        >          <div>
+        >
+          <div>
 
             <label className="mb-2 block font-semibold">
               Full Name
@@ -350,9 +395,10 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            className="w-full rounded-2xl bg-[#D94680] py-4 text-lg font-bold text-white hover:opacity-90"
+            disabled={processing}
+            className="w-full rounded-2xl bg-[#D94680] py-4 text-lg font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Continue
+            {processing ? "Processing..." : "Continue"}
           </button>
 
         </form>
@@ -362,4 +408,3 @@ export default function RegisterPage() {
     </main>
   );
 }
-

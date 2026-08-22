@@ -22,7 +22,22 @@ export default function ProductPage() {
   const router = useRouter();
   const { id: productId } = useParams<{ id: string }>();
   const [productData, setProductData] = useState<Product | null>(null);
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  function goHome() {
+    if (storeSlug) {
+      router.push(`/store/${storeSlug}`);
+    }
+  }
+
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else if (storeSlug) {
+      router.push(`/store/${storeSlug}`);
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -44,6 +59,14 @@ export default function ProductPage() {
       }
 
       setProductData(data);
+
+      const { data: store } = await supabase
+        .from("stores")
+        .select("slug")
+        .eq("id", data.store_id)
+        .single();
+
+      setStoreSlug(store?.slug ?? null);
       setLoading(false);
     }
 
@@ -60,20 +83,14 @@ export default function ProductPage() {
             <div className="flex items-center gap-3">
               <button aria-label="Home"
                 type="button"
-                onClick={() => router.push("/")}
+                onClick={goHome}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
               </button>
               <button aria-label="Back"
                 type="button"
-                onClick={() => {
-                  if (typeof window !== "undefined" && window.history.length > 1) {
-                    router.back();
-                  } else {
-                    router.push("/");
-                  }
-                }}
+                onClick={goBack}
                 className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
               >
                 <span aria-hidden="true">←</span>
@@ -96,20 +113,14 @@ export default function ProductPage() {
             <div className="flex items-center gap-3">
               <button aria-label="Home"
                 type="button"
-                onClick={() => router.push("/")}
+                onClick={goHome}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
               </button>
               <button aria-label="Back"
                 type="button"
-                onClick={() => {
-                  if (typeof window !== "undefined" && window.history.length > 1) {
-                    router.back();
-                  } else {
-                    router.push("/");
-                  }
-                }}
+                onClick={goBack}
                 className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
               >
                 <span aria-hidden="true">←</span>
@@ -139,20 +150,14 @@ export default function ProductPage() {
           <div className="flex items-center gap-3">
             <button aria-label="Home"
               type="button"
-              onClick={() => router.push("/")}
+              onClick={goHome}
               className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
             </button>
             <button aria-label="Back"
               type="button"
-              onClick={() => {
-                if (typeof window !== "undefined" && window.history.length > 1) {
-                  router.back();
-                } else {
-                  router.push("/");
-                }
-              }}
+              onClick={goBack}
               className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             >
               <span aria-hidden="true">←</span>

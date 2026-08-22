@@ -32,6 +32,7 @@ export default function BuyPage() {
   const [sending, setSending] = useState(false);
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [storeType, setStoreType] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
 
@@ -40,6 +41,20 @@ export default function BuyPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+
+  function goHome() {
+    if (storeSlug) {
+      router.push(`/store/${storeSlug}`);
+    }
+  }
+
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else if (storeSlug) {
+      router.push(`/store/${storeSlug}`);
+    }
+  }
 
   useEffect(() => {
     async function loadProduct() {
@@ -85,6 +100,14 @@ export default function BuyPage() {
         .single();
 
       setStoreType(store?.store_type ?? null);
+
+      const { data: storeSlugData } = await supabase
+        .from("stores")
+        .select("slug")
+        .eq("id", data.store_id)
+        .single();
+
+      setStoreSlug(storeSlugData?.slug ?? null);
 
 if (store && store.user_id === session.user.id) {
         setIsOwner(true);
@@ -163,28 +186,22 @@ if (store && store.user_id === session.user.id) {
     <main className="min-h-screen bg-[#FAFAFC] py-10 px-6">
       <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-lg">
 
-        <div className="mb-8 flex items-center justify-between">
+        <div className="relative mb-8 flex items-center justify-center">
           <h1 className="mb-8 text-4xl font-bold">
             Buy Product
           </h1>
 
-          <div className="flex items-center gap-3">
+          <div className="absolute left-0 flex items-center gap-3">
             <button aria-label="Home"
               type="button"
-              onClick={() => router.push("/")}
+              onClick={goHome}
               className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
             </button>
             <button aria-label="Back"
               type="button"
-              onClick={() => {
-                if (typeof window !== "undefined" && window.history.length > 1) {
-                  router.back();
-                } else {
-                  router.push("/");
-                }
-              }}
+              onClick={goBack}
               className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             >
               <span aria-hidden="true">←</span>

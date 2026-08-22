@@ -10,6 +10,7 @@ export default function CustomerLoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Read redirect param from current URL (client-side only)
   const redirect =
@@ -17,17 +18,26 @@ export default function CustomerLoginPage() {
       ? new URLSearchParams(window.location.search).get("redirect")
       : null;
 
-  const safeRedirect = redirect && redirect.startsWith("/") && !redirect.startsWith("//")
-    ? redirect
-    : "/";
+  const safeRedirect =
+    redirect &&
+    redirect.startsWith("/") &&
+    !redirect.startsWith("//")
+      ? redirect
+      : "/";
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
 
     if (!email || !password) {
       alert("Please enter your email and password.");
       return;
     }
+
+    // Disable immediately after the first valid submission
+    setIsSubmitting(true);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -35,12 +45,14 @@ export default function CustomerLoginPage() {
     });
 
     if (error) {
+      setIsSubmitting(false);
       alert(error.message);
       return;
     }
 
     // Verify this user is a customer
     const userId = data?.user?.id;
+
     if (userId) {
       const { data: customer } = await supabase
         .from("customers")
@@ -55,7 +67,10 @@ export default function CustomerLoginPage() {
     }
 
     // Not a customer — show error
-    alert("This account is not registered as a customer. Please sign up first.");
+    setIsSubmitting(false);
+    alert(
+      "This account is not registered as a customer. Please sign up first."
+    );
   }
 
   return (
@@ -65,60 +80,100 @@ export default function CustomerLoginPage() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#D94680] text-3xl font-bold text-white">
             V
           </div>
-          <h1 className="mt-6 text-4xl font-bold">Customer Login</h1>
-          <p className="mt-2 text-gray-500">Sign in to your customer account</p>
+
+          <h1 className="mt-6 text-4xl font-bold">
+            Customer Login
+          </h1>
+
+          <p className="mt-2 text-gray-500">
+            Sign in to your customer account
+          </p>
         </div>
 
         <div className="mb-6 flex justify-end">
-          <button aria-label="Home"
+          <button
+            aria-label="Home"
             type="button"
             onClick={() => router.push("/")}
-            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            disabled={isSubmitting}
+            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m3 10 9-7 9 7" />
+              <path d="M5 9v11h14V9" />
+              <path d="M9 20v-6h6v6" />
+            </svg>
           </button>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="mb-2 block font-semibold">Email</label>
+            <label className="mb-2 block font-semibold">
+              Email
+            </label>
+
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680]"
+              disabled={isSubmitting}
+              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680] disabled:cursor-not-allowed disabled:bg-gray-100"
             />
           </div>
 
           <div>
-            <label className="mb-2 block font-semibold">Password</label>
+            <label className="mb-2 block font-semibold">
+              Password
+            </label>
+
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="********"
-              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680]"
+              disabled={isSubmitting}
+              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680] disabled:cursor-not-allowed disabled:bg-gray-100"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full rounded-2xl bg-[#D94680] py-4 text-lg font-bold text-white hover:opacity-90"
+            disabled={isSubmitting}
+            className="w-full rounded-2xl bg-[#D94680] py-4 text-lg font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Login
+            {isSubmitting ? "Processing..." : "Login"}
           </button>
         </form>
 
         <p className="mt-8 text-center text-gray-500">
           Don't have an account?
+
           <Link
             href={
               safeRedirect !== "/"
-                ? `/customer/signup?redirect=${encodeURIComponent(safeRedirect)}`
+                ? `/customer/signup?redirect=${encodeURIComponent(
+                    safeRedirect
+                  )}`
                 : "/customer/signup"
             }
-            className="ml-2 font-semibold text-[#D94680]"
+            onClick={(e) => {
+              if (isSubmitting) {
+                e.preventDefault();
+              }
+            }}
+            className={`ml-2 font-semibold text-[#D94680] ${
+              isSubmitting ? "pointer-events-none opacity-50" : ""
+            }`}
           >
             Sign up
           </Link>
@@ -127,4 +182,3 @@ export default function CustomerLoginPage() {
     </main>
   );
 }
-

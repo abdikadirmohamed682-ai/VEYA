@@ -32,11 +32,27 @@ export default function PaymentPage() {
 
   const [seller, setSeller] = useState<Seller | null>(null);
   const [storeId, setStoreId] = useState("");
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   const [senderNumber, setSenderNumber] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+
+  function goHome() {
+    if (storeSlug) {
+      router.push(`/store/${storeSlug}`);
+    }
+  }
+
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else if (storeSlug) {
+      router.push(`/store/${storeSlug}`);
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
@@ -105,6 +121,12 @@ export default function PaymentPage() {
       return;
     }
 
+    const { data: storeSlugData } = await supabase
+      .from("stores")
+      .select("slug")
+      .eq("id", verifiedStoreId)
+      .single();
+
     const { data: user, error: userError } = await supabase
       .from("users")
       .select("full_name,profile_image,payment_number")
@@ -113,6 +135,7 @@ export default function PaymentPage() {
 
     if (!userError && user && active) {
       setStoreId(verifiedStoreId);
+      setStoreSlug(storeSlugData?.slug ?? null);
       setSeller(user as Seller);
     }
 
@@ -201,28 +224,22 @@ export default function PaymentPage() {
     <main className="min-h-screen bg-[#FAFAFC] flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-lg">
 
-        <div className="mb-8 flex items-center justify-between">
+        <div className="relative mb-8 flex items-center justify-center">
           <h1 className="text-3xl font-bold text-center mb-8">
             Payment Information
           </h1>
 
-          <div className="flex items-center gap-3">
+          <div className="absolute left-0 flex items-center gap-3">
             <button aria-label="Home"
               type="button"
-              onClick={() => router.push("/")}
+              onClick={goHome}
               className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-[#D94680] transition hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D94680]"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
             </button>
             <button aria-label="Back"
               type="button"
-              onClick={() => {
-                if (typeof window !== "undefined" && window.history.length > 1) {
-                  router.back();
-                } else {
-                  router.push("/");
-                }
-              }}
+              onClick={goBack}
               className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             >
               <span aria-hidden="true">←</span>

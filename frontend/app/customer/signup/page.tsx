@@ -11,17 +11,26 @@ function CustomerSignupForm() {
 
   const redirect = searchParams.get("redirect");
 
-  const safeRedirect = redirect && redirect.startsWith("/") && !redirect.startsWith("//")
-    ? redirect
-    : "/";
+  const safeRedirect =
+    redirect &&
+    redirect.startsWith("/") &&
+    !redirect.startsWith("//")
+      ? redirect
+      : "/";
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-    async function handleSignup(e: FormEvent<HTMLFormElement>) {
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSignup(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
 
     if (!fullName || !email || !password || !confirmPassword) {
       alert("Please fill in all required fields.");
@@ -33,12 +42,16 @@ function CustomerSignupForm() {
       return;
     }
 
+    // Disable the button immediately after the first valid submission
+    setIsSubmitting(true);
+
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     });
 
     if (signUpError) {
+      setIsSubmitting(false);
       alert(signUpError.message);
       return;
     }
@@ -50,11 +63,13 @@ function CustomerSignupForm() {
       });
 
     if (loginError) {
+      setIsSubmitting(false);
       alert(loginError.message);
       return;
     }
 
     if (!loginData.user) {
+      setIsSubmitting(false);
       alert("Login failed.");
       return;
     }
@@ -69,18 +84,17 @@ function CustomerSignupForm() {
       });
 
     if (customerError) {
+      setIsSubmitting(false);
       alert(customerError.message);
       return;
     }
-        if (safeRedirect !== "/") {
-      router.replace(safeRedirect);
-    } else {
-      router.replace("/");
-    }
 
+    // Keep the button disabled while navigating to the next page
+    router.replace(safeRedirect);
     router.refresh();
   }
-    return (
+
+  return (
     <main className="flex min-h-screen items-center justify-center bg-[#FAFAFC] px-6">
       <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl">
         <div className="mb-10 text-center">
@@ -98,17 +112,31 @@ function CustomerSignupForm() {
         </div>
 
         <div className="mb-6 flex justify-end">
-          <button aria-label="Home"
+          <button
+            aria-label="Home"
             type="button"
             onClick={() => router.push("/")}
-            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            disabled={isSubmitting}
+            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m3 10 9-7 9 7" />
+              <path d="M5 9v11h14V9" />
+              <path d="M9 20v-6h6v6" />
+            </svg>
           </button>
         </div>
 
         <form onSubmit={handleSignup} className="space-y-6">
-
           <div>
             <label className="mb-2 block font-semibold">
               Full Name
@@ -119,7 +147,8 @@ function CustomerSignupForm() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="John Doe"
-              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680]"
+              disabled={isSubmitting}
+              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680] disabled:cursor-not-allowed disabled:bg-gray-100"
             />
           </div>
 
@@ -133,7 +162,8 @@ function CustomerSignupForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680]"
+              disabled={isSubmitting}
+              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680] disabled:cursor-not-allowed disabled:bg-gray-100"
             />
           </div>
 
@@ -147,7 +177,8 @@ function CustomerSignupForm() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+1 234 567 890"
-              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680]"
+              disabled={isSubmitting}
+              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680] disabled:cursor-not-allowed disabled:bg-gray-100"
             />
           </div>
 
@@ -161,7 +192,8 @@ function CustomerSignupForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="********"
-              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680]"
+              disabled={isSubmitting}
+              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680] disabled:cursor-not-allowed disabled:bg-gray-100"
             />
           </div>
 
@@ -175,17 +207,18 @@ function CustomerSignupForm() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="********"
-              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680]"
+              disabled={isSubmitting}
+              className="w-full rounded-xl border border-gray-300 p-4 outline-none focus:border-[#D94680] disabled:cursor-not-allowed disabled:bg-gray-100"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full rounded-2xl bg-[#D94680] py-4 text-lg font-bold text-white hover:opacity-90"
+            disabled={isSubmitting}
+            className="w-full rounded-2xl bg-[#D94680] py-4 text-lg font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Sign Up
+            {isSubmitting ? "Processing..." : "Sign Up"}
           </button>
-
         </form>
 
         <p className="mt-8 text-center text-gray-500">
@@ -194,15 +227,23 @@ function CustomerSignupForm() {
           <Link
             href={
               safeRedirect !== "/"
-                ? `/customer/login?redirect=${encodeURIComponent(safeRedirect)}`
+                ? `/customer/login?redirect=${encodeURIComponent(
+                    safeRedirect
+                  )}`
                 : "/customer/login"
             }
-            className="ml-2 font-semibold text-[#D94680]"
+            onClick={(e) => {
+              if (isSubmitting) {
+                e.preventDefault();
+              }
+            }}
+            className={`ml-2 font-semibold text-[#D94680] ${
+              isSubmitting ? "pointer-events-none opacity-50" : ""
+            }`}
           >
             Log in
           </Link>
         </p>
-
       </div>
     </main>
   );
